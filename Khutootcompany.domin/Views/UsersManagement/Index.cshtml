@@ -1,0 +1,55 @@
+﻿@model IEnumerable<Khutootcompany.presention.Models.UserViewModel>
+
+@{
+    ViewData["Title"] = "إدارة المستخدمين";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between mb-4">
+        <h1><i class="fas fa-user-cog"></i> إدارة المستخدمين</h1>
+        <a href="/UsersManagement/Create" class="btn btn-success">
+            <i class="fas fa-user-plus"></i> إضافة مستخدم جديد
+        </a>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>اسم المستخدم</th>
+                        <th>الاسم الكامل</th>
+                        <th>الصلاحية</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        var roleBadge = user.Role == "Admin" ? "bg-danger" : "bg-primary";
+                        
+                        <tr>
+                            <td><strong>@user.UserName</strong></td>
+                            <td>@user.FullName</td>
+                            <td><span class="badge @roleBadge">@user.Role</span></td>
+                            <td>
+                                <a href="/UsersManagement/Edit/@user.Id" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> تعديل
+                                </a>
+                                @if (user.UserName != User.Identity.Name)
+                                {
+                                    <form method="post" action="/UsersManagement/Delete/@user.Id" class="d-inline" onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> حذف
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

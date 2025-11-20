@@ -1,0 +1,266 @@
+﻿@using Khutootcompany.Application.DTOs;
+@model IEnumerable<Khutootcompany.Application.DTOs.TruckDto>
+
+@{
+    ViewData["Title"] = "كشف الشاحنات";
+    var filterTitle = ViewBag.FilterTitle ?? "جميع الشاحنات";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-truck"></i> @filterTitle
+            <span class="badge bg-primary">@Model.Count() شاحنة</span>
+        </h1>
+        <div>
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/Trucks/Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> إضافة شاحنة جديدة
+                </a>
+            }
+            <button onclick="exportPAMReport()" class="btn btn-danger">
+                <i class="fas fa-file-pdf"></i> تصدير كشف PAM
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-filter"></i> فلترة سريعة
+            </h5>
+            <div class="btn-group flex-wrap" role="group">
+                <a href="/Trucks" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> الكل
+                </a>
+                <a href="/Trucks?filter=expired-insurance" class="btn btn-outline-danger">
+                    <i class="fas fa-exclamation-triangle"></i> تأمين منتهي
+                </a>
+                <a href="/Trucks?filter=expiring-insurance" class="btn btn-outline-warning">
+                    <i class="fas fa-clock"></i> تأمين ينتهي خلال شهر
+                </a>
+                <a href="/Trucks?filter=not-accepted-pam" class="btn btn-outline-danger">
+                    <i class="fas fa-times-circle"></i> غير مقبول في PAM
+                </a>
+                <a href="/Trucks?filter=general-transport" class="btn btn-outline-info">
+                    <i class="fas fa-truck-moving"></i> نقل عام
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trucks Table (PAM Style) -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> كشف الشاحنات الرسمي - نظام PAM
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="trucksTable" class="table table-bordered table-hover" style="width:100%; font-size: 0.9rem;">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ت</th>
+                            <th>تاريخ التسجيل</th>
+                            <th>اللوحة</th>
+                            <th>الصنع</th>
+                            <th>السنة</th>
+                            <th>السائق</th>
+                            <th>الرقم المدني</th>
+                            <th>الجنسية</th>
+                            <th>نوع الترخيص</th>
+                            <th>انتهاء التأمين</th>
+                            <th>حالة PAM</th>
+                            <th>اللوحة السابقة</th>
+                            <th>اللون</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var truck in Model)
+                        {
+                            var rowClass = "";
+                            if (truck.IsInsuranceExpired)
+                            {
+                                rowClass = "expired-row";
+                            }
+                            else if (truck.IsInsuranceExpiringSoon)
+                            {
+                                rowClass = "expiring-soon-row";
+                            }
+                            else if (truck.IsInsuranceWarning)
+                            {
+                                rowClass = "warning-row";
+                            }
+
+                            <tr class="@rowClass">
+                                <td>@index</td>
+                                <td>
+                                    @if (truck.PAMRegistrationDate.HasValue)
+                                    {
+                                        @truck.PAMRegistrationDate.Value.ToString("dd/MM/yyyy")
+                                    }
+                                </td>
+                                <td class="fw-bold">@truck.PlateNumber</td>
+                                <td>@truck.Model</td>
+                                <td>@truck.Year</td>
+                                <td>@truck.CurrentDriverName</td>
+                                <td>@truck.CurrentDriverCivilId</td>
+                                <td>@truck.CurrentDriverNationality</td>
+                                <td>
+                                    <span class="badge bg-info">@truck.LicenseTypeDisplay</span>
+                                </td>
+                                <td>
+                                    @if (truck.InsuranceExpiryDate.HasValue)
+                                    {
+                                        <span class="@(truck.IsInsuranceExpired ? "text-danger fw-bold" : truck.IsInsuranceExpiringSoon ? "text-warning fw-bold" : "")">
+                                            @truck.InsuranceExpiryDate.Value.ToString("dd/MM/yyyy")
+                                        </span>
+                                        @if (truck.IsInsuranceExpired)
+                                        {
+                                            <br />
+                                            <span class="badge bg-danger">منتهي</span>
+                                        }
+                                        else if (truck.IsInsuranceExpiringSoon)
+                                        {
+                                            <br />
+                                            <span class="badge bg-warning text-dark">خلال شهر</span>
+                                        }
+                                    }
+                                </td>
+                                <td>
+                                    @if (truck.PAMStatus.HasValue)
+                                    {
+                                        var badgeClass = truck.PAMStatus.Value.ToString() == "تم_القبول" ? "bg-success" : "bg-danger";
+                                        <span class="badge @badgeClass">@truck.PAMStatusDisplay</span>
+                                    }
+                                </td>
+                                <td>@truck.PreviousPlateNumber</td>
+                                <td>@truck.Color</td>
+                                <td>
+                                    <div class="btn-group-vertical btn-group-sm" role="group">
+                                        <a href="/Trucks/Details/@truck.TruckId" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i> تفاصيل
+                                        </a>
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <a href="/Trucks/Edit/@truck.TruckId" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-edit"></i> تعديل
+                                            </a>
+                                            <button onclick="confirmDelete(@truck.TruckId)" class="btn btn-danger btn-sm">
+                                                <i class="fas fa-trash"></i> حذف
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h6 class="card-title">
+                <i class="fas fa-info-circle"></i> دليل الألوان:
+            </h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="badge bg-danger">أحمر</span> = منتهي أو خلال شهر
+                </div>
+                <div class="col-md-4">
+                    <span class="badge bg-warning text-dark">برتقالي</span> = خلال شهرين
+                </div>
+                <div class="col-md-4">
+                    <span class="badge bg-success">أخضر</span> = صالح
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف هذه الشاحنة؟ لا يمكن التراجع عن هذا الإجراء.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> تأكيد الحذف
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#trucksTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"
+                },
+                "pageLength": 25,
+                "order": [[0, "asc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": -1 }
+                ],
+                "dom": 'Bfrtip',
+                "buttons": [
+                    {
+                        extend: 'excel',
+                        text: '<i class="fas fa-file-excel"></i> تصدير Excel',
+                        className: 'btn btn-success btn-sm'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="fas fa-file-pdf"></i> تصدير PDF',
+                        className: 'btn btn-danger btn-sm',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        customize: function(doc) {
+                            doc.defaultStyle.font = 'Arabic';
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> طباعة',
+                        className: 'btn btn-primary btn-sm'
+                    }
+                ]
+            });
+        });
+
+        function confirmDelete(truckId) {
+            $('#deleteForm').attr('action', '/Trucks/Delete/' + truckId);
+            $('#deleteModal').modal('show');
+        }
+
+        function exportPAMReport() {
+            window.location.href = '/Reports/GeneratePAMReport';
+        }
+    </script>
+}

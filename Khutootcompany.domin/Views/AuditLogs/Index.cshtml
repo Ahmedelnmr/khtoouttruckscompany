@@ -1,0 +1,65 @@
+﻿
+@model IEnumerable<Khutootcompany.Application.Interfaces.AuditLogDto>
+
+@{
+    ViewData["Title"] = "سجل التغييرات";
+}
+
+<div class="container-fluid">
+    <h1><i class="fas fa-history"></i> سجل التغييرات</h1>
+
+    <div class="card shadow mt-4">
+        <div class="card-body">
+            <table id="auditTable" class="table table-sm table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المستخدم</th>
+                        <th>الكيان</th>
+                        <th>الإجراء</th>
+                        <th>التفاصيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        var actionBadge = log.Action switch {
+                            "Added" => "bg-success",
+                            "Modified" => "bg-warning",
+                            "Deleted" => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td>@log.PerformedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><span class="badge bg-primary">@log.PerformedBy</span></td>
+                            <td>@log.EntityName (@log.EntityId)</td>
+                            <td><span class="badge @actionBadge">@log.Action</span></td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(log.OldValues) || !string.IsNullOrEmpty(log.NewValues))
+                                {
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detailsModal-@log.AuditLogId">
+                                        <i class="fas fa-eye"></i> تفاصيل
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#auditTable').DataTable({
+                "language": {"url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"},
+                "order": [[0, "desc"]],
+                "pageLength": 100
+            });
+        });
+    </script>
+}
+

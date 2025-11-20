@@ -1,0 +1,181 @@
+﻿@model Khutootcompany.Application.DTOs.CashTransactionDto
+
+@{
+    ViewData["Title"] = "تفاصيل حركة الصندوق";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="fas fa-receipt"></i> @ViewData["Title"]
+                </h1>
+                <a href="/CashTransactions" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right"></i> رجوع
+                </a>
+            </div>
+
+            <!-- Transaction Card -->
+            <div class="card shadow mb-3">
+                <div class="card-header @(Model.IsIncome ? "bg-success" : "bg-danger") text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cash-register"></i>
+                        @(Model.IsIncome ? "حركة دخول" : "حركة خروج")
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="highlight-box p-3 rounded bg-light">
+                                <p class="mb-1"><small class="text-muted">المبلغ</small></p>
+                                <h3 class="@(Model.IsIncome ? "text-success" : "text-danger")">
+                                    @Model.Amount.ToString("N3") د.ك
+                                </h3>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="highlight-box p-3 rounded bg-light">
+                                <p class="mb-1"><small class="text-muted">التاريخ والوقت</small></p>
+                                <h5>@Model.TransactionDate.ToString("dd/MM/yyyy HH:mm")</h5>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-exchange-alt"></i> نوع الحركة:</strong></p>
+                            <span class="badge @(Model.IsIncome ? "bg-success" : "bg-danger") fs-6">
+                                @Model.TypeDisplay
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-id-badge"></i> رقم الحركة:</strong></p>
+                            <p>@Model.TransactionId</p>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    @if (Model.EmployeeId.HasValue && !string.IsNullOrEmpty(Model.EmployeeName))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p><strong><i class="fas fa-user"></i> الموظف:</strong></p>
+                                <p>@Model.EmployeeName</p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.TruckId.HasValue && !string.IsNullOrEmpty(Model.TruckPlate))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p><strong><i class="fas fa-truck"></i> الشاحنة:</strong></p>
+                                <span class="badge bg-info fs-6">@Model.TruckPlate</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.SondNumber))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p><strong><i class="fas fa-hashtag"></i> رقم الصك:</strong></p>
+                                <p>@Model.SondNumber</p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p><strong><i class="fas fa-info-circle"></i> الوصف:</strong></p>
+                                <div class="bg-light p-3 rounded">
+                                    @Model.Description
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p><strong><i class="fas fa-sticky-note"></i> ملاحظات:</strong></p>
+                                <div class="bg-light p-3 rounded">
+                                    @Model.Notes
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <hr />
+
+                    <!-- Audit Info -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-user-check"></i> المسجل بواسطة:</strong></p>
+                            <p>@Model.CreatedBy</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-calendar-check"></i> تاريخ التسجيل:</strong></p>
+                            <p>@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="/CashTransactions" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-right"></i> رجوع
+                </a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <button onclick="confirmDelete(@Model.TransactionId)" class="btn btn-danger btn-lg">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف هذه الحركة؟ لا يمكن التراجع عن هذا الإجراء.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> تأكيد الحذف
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmDelete(transactionId) {
+            $('#deleteForm').attr('action', '/CashTransactions/Delete/' + transactionId);
+            $('#deleteModal').modal('show');
+        }
+    </script>
+}

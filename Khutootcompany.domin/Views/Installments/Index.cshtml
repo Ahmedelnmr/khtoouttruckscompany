@@ -1,0 +1,306 @@
+﻿@model IEnumerable<Khutootcompany.Application.DTOs.InstallmentDto>
+
+@{
+    ViewData["Title"] = "إدارة الأقساط";
+    var filterTitle = ViewBag.FilterTitle ?? "جميع الأقساط";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-credit-card"></i> @filterTitle
+            <span class="badge bg-primary">@Model.Count() قسط</span>
+        </h1>
+        <div>
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/Installments/Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> إضافة قسط جديد
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-filter"></i> فلترة سريعة
+            </h5>
+            <div class="btn-group flex-wrap" role="group">
+                <a href="/Installments" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> جميع الأقساط
+                </a>
+                <a href="/Installments?filter=active" class="btn btn-outline-success">
+                    <i class="fas fa-check-circle"></i> أقساط نشطة
+                </a>
+                <a href="/Installments?filter=overdue" class="btn btn-outline-danger">
+                    <i class="fas fa-exclamation-triangle"></i> أقساط متأخرة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        @{
+            var totalDebt = Model.Sum(i => i.RemainingAmount);
+            var totalPaid = Model.Sum(i => i.PaidAmount);
+            var activeCount = Model.Count(i => !i.IsCompleted);
+            var overdueCount = Model.Count(i => i.IsOverdue);
+        }
+
+        <div class="col-md-3">
+            <div class="card shadow text-center dashboard-card">
+                <div class="card-body">
+                    <i class="fas fa-money-bill-wave fa-3x text-primary mb-3"></i>
+                    <h6 class="text-muted">إجمالي المتبقي</h6>
+                    <h3 class="text-primary">@totalDebt.ToString("N3")</h3>
+                    <small class="text-muted">دينار كويتي</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow text-center dashboard-card">
+                <div class="card-body">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h6 class="text-muted">إجمالي المدفوع</h6>
+                    <h3 class="text-success">@totalPaid.ToString("N3")</h3>
+                    <small class="text-muted">دينار كويتي</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow text-center dashboard-card">
+                <div class="card-body">
+                    <i class="fas fa-sync-alt fa-3x text-info mb-3"></i>
+                    <h6 class="text-muted">أقساط نشطة</h6>
+                    <h3 class="text-info">@activeCount</h3>
+                    <small class="text-muted">قسط</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow text-center dashboard-card">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <h6 class="text-muted">أقساط متأخرة</h6>
+                    <h3 class="text-danger">@overdueCount</h3>
+                    <small class="text-muted">قسط</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Installments Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> قائمة الأقساط
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="installmentsTable" class="table table-hover table-bordered" style="width:100%">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ت</th>
+                            <th>الشاحنة</th>
+                            <th>السائق</th>
+                            <th>سعر المكتب</th>
+                            <th>سعر الساير</th>
+                            <th>الربح</th>
+                            <th>القسط الشهري</th>
+                            <th>المدفوع</th>
+                            <th>المتبقي</th>
+                            <th>التقدم</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var inst in Model)
+                        {
+                            var rowClass = inst.IsOverdue ? "table-danger" : inst.IsCompleted ? "table-success" : "";
+
+                            <tr class="@rowClass">
+                                <td>@index</td>
+                                <td>
+                                    <a href="/Trucks/Details/@inst.TruckId" class="fw-bold text-decoration-none">
+                                        @inst.TruckPlate
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="/Employees/Details/@inst.EmployeeId" class="text-decoration-none">
+                                        @inst.EmployeeName
+                                    </a>
+                                </td>
+                                <td class="text-end">@inst.TotalPriceOffice.ToString("N3")</td>
+                                <td class="text-end">@inst.TotalPriceSayer.ToString("N3")</td>
+                                <td class="text-end">
+                                    <span class="badge bg-info">@inst.ProfitMargin.ToString("N3")</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-warning text-dark">@inst.MonthlyQest.ToString("N3")</span>
+                                </td>
+                                <td class="text-end text-success fw-bold">@inst.PaidAmount.ToString("N3")</td>
+                                <td class="text-end text-danger fw-bold">@inst.RemainingAmount.ToString("N3")</td>
+                                <td>
+                                    <div class="progress" style="min-width: 100px;">
+                                        <div class="progress-bar @(inst.IsCompleted ? "bg-success" : inst.IsOverdue ? "bg-danger" : "bg-primary")" 
+                                             role="progressbar" 
+                                             style="width: @inst.ProgressPercentage%"
+                                             aria-valuenow="@inst.ProgressPercentage" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            @inst.ProgressPercentage.ToString("N0")%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (inst.IsCompleted)
+                                    {
+                                        <span class="badge bg-success">مكتمل</span>
+                                    }
+                                    else if (inst.IsOverdue)
+                                    {
+                                        <span class="badge bg-danger">متأخر</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-primary">نشط</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group-vertical btn-group-sm" role="group">
+                                        <a href="/Installments/Details/@inst.InstallmentId" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i> تفاصيل
+                                        </a>
+                                        @if (!inst.IsCompleted)
+                                        {
+                                            <button class="btn btn-success btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#paymentModal" 
+                                                    onclick="setInstallmentId(@inst.InstallmentId, '@inst.TruckPlate', @inst.MonthlyQest)">
+                                                <i class="fas fa-dollar-sign"></i> دفعة
+                                            </button>
+                                        }
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <a href="/Installments/Edit/@inst.InstallmentId" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-edit"></i> تعديل
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h6 class="card-title">
+                <i class="fas fa-info-circle"></i> دليل الألوان:
+            </h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="badge bg-success">أخضر</span> = قسط مكتمل
+                </div>
+                <div class="col-md-4">
+                    <span class="badge bg-danger">أحمر</span> = قسط متأخر
+                </div>
+                <div class="col-md-4">
+                    <span class="badge bg-primary">أزرق</span> = قسط نشط
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/Installments/RecordPayment">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="installmentId" id="installmentId" />
+                
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-money-bill-wave"></i> تسجيل دفعة جديدة
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="alert alert-info" id="truckInfo"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">المبلغ (د.ك) *</label>
+                        <input type="number" name="amount" id="paymentAmount" class="form-control" step="0.001" required />
+                        <small class="text-muted">القسط الشهري المحدد: <span id="monthlyAmount"></span> د.ك</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">نوع الدفعة *</label>
+                        <select name="paymentType" class="form-select" required>
+                            <option value="قسط">قسط شهري</option>
+                            <option value="مقدم">دفعة مقدمة</option>
+                            <option value="إضافي">مبلغ إضافي</option>
+                            <option value="نهائي">دفعة نهائية</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">رقم السند</label>
+                        <input type="text" name="sondNumber" class="form-control" maxlength="50" />
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> حفظ الدفعة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#installmentsTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"
+                },
+                "pageLength": 25,
+                "order": [[10, "desc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": -1 }
+                ]
+            });
+        });
+
+        function setInstallmentId(id, truckPlate, monthlyAmount) {
+            $('#installmentId').val(id);
+            $('#truckInfo').html('<i class="fas fa-truck"></i> الشاحنة: <strong>' + truckPlate + '</strong>');
+            $('#monthlyAmount').text(monthlyAmount.toFixed(3));
+            $('#paymentAmount').val(monthlyAmount.toFixed(3));
+        }
+    </script>
+}

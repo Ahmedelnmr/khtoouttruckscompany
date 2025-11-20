@@ -1,0 +1,204 @@
+﻿@using Khutootcompany.Domain.Enums
+@model Khutootcompany.Application.DTOs.CreateCashTransactionDto
+
+@{
+    ViewData["Title"] = "تعديل حركة مالية";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-edit"></i> تعديل حركة مالية
+        </h1>
+        <a href="/CashTransactions" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع للقائمة
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-pencil-alt"></i> تعديل البيانات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="Edit" asp-route-id="@Model.Id" id="editCashForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Id" />
+                        
+                        <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+                        <!-- Transaction Date and Amount -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="TransactionDate" class="form-label">
+                                    <i class="fas fa-calendar"></i> تاريخ الحركة <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="TransactionDate" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="TransactionDate" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Amount" class="form-label">
+                                    <i class="fas fa-coins"></i> المبلغ (د.ك) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Amount" type="number" step="0.001" class="form-control" id="amountInput" />
+                                <span asp-validation-for="Amount" class="text-danger small"></span>
+                                <small class="text-muted d-block mt-1">موجب للقبض، سالب للصرف</small>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Type -->
+                        <div class="mb-3">
+                            <label asp-for="Type" class="form-label">
+                                <i class="fas fa-tag"></i> نوع الحركة <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="Type" class="form-select" asp-items="Html.GetEnumSelectList<TransactionType>()">
+                                <option value="">-- اختر نوعاً --</option>
+                            </select>
+                            <span asp-validation-for="Type" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Employee and Truck -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="EmployeeId" class="form-label">
+                                    <i class="fas fa-user"></i> الموظف
+                                </label>
+                                <select asp-for="EmployeeId" class="form-select">
+                                    <option value="">-- اختياري --</option>
+                                    @if (ViewBag.Employees != null)
+                                    {
+                                        @foreach (var emp in ViewBag.Employees)
+                                        {
+                                            <option value="@emp.Value" selected="@(emp.Value == Model.EmployeeId)">@emp.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="EmployeeId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="TruckId" class="form-label">
+                                    <i class="fas fa-truck"></i> الشاحنة
+                                </label>
+                                <select asp-for="TruckId" class="form-select">
+                                    <option value="">-- اختياري --</option>
+                                    @if (ViewBag.Trucks != null)
+                                    {
+                                        @foreach (var truck in ViewBag.Trucks)
+                                        {
+                                            <option value="@truck.Value" selected="@(truck.Value == Model.TruckId)">@truck.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="TruckId" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">
+                                <i class="fas fa-info-circle"></i> الوصف
+                            </label>
+                            <textarea asp-for="Description" class="form-control" rows="2" placeholder="أدخل وصفاً للحركة"></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Sond Number and Notes -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="SondNumber" class="form-label">
+                                    <i class="fas fa-receipt"></i> رقم السند
+                                </label>
+                                <input asp-for="SondNumber" type="text" class="form-control" placeholder="أدخل رقم السند" />
+                                <span asp-validation-for="SondNumber" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Notes" class="form-label">
+                                    <i class="fas fa-sticky-note"></i> ملاحظات
+                                </label>
+                                <input asp-for="Notes" type="text" class="form-control" placeholder="أدخل ملاحظات إضافية" />
+                                <span asp-validation-for="Notes" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <hr>
+                        <div class="d-flex justify-content-between gap-2">
+                            <a href="/CashTransactions" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-save"></i> حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Warning Box -->
+            <div class="alert alert-warning mt-3">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>تحذير:</strong> تعديل الحركات المالية سيؤثر على رصيد الصندوق. تأكد من صحة البيانات قبل الحفظ.
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        $(document).ready(function() {
+            const originalAmount = @Model.Amount;
+
+            // Calculate balance impact
+            function calculateImpact() {
+                const newAmount = parseFloat($('#amountInput').val()) || 0;
+                const difference = newAmount - originalAmount;
+
+                if (Math.abs(difference) > 0.001) {
+                    console.log('Amount changed: Original=' + originalAmount + ', New=' + newAmount);
+                } 
+            }
+
+            $('#amountInput').on('change keyup', calculateImpact);
+
+            // Form validation
+            $('#editCashForm').on('submit', function(e) {
+                const amount = parseFloat($('#amountInput').val()) || 0;
+                
+                if (amount === 0) {
+                    e.preventDefault();
+                    alert('المبلغ لا يمكن أن يكون صفر');
+                    $('#amountInput').focus();
+                    return false;
+                }
+
+                if (!confirm('هل أنت متأكد من حفظ هذه التعديلات؟')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Highlight changed fields
+            $('input, select, textarea').on('change', function() {
+                $(this).addClass('border-warning border-2');
+            });
+        });
+    </script>
+}
+
+<style>
+    .border-warning {
+        border-color: #ffc107 !important;
+    }
+    
+    .border-2 {
+        border-width: 2px !important;
+    }
+</style>

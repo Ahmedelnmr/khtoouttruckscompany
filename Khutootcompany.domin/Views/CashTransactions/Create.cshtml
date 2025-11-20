@@ -1,0 +1,254 @@
+﻿@model Khutootcompany.Application.DTOs.CreateCashTransactionDto
+
+@{
+    ViewData["Title"] = "إضافة حركة مالية جديدة";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-plus-circle"></i> إضافة حركة مالية جديدة
+        </h1>
+        <a href="/CashTransactions" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع للقائمة
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave"></i> بيانات الحركة المالية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="Create" id="cashForm">
+                        <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+                        <!-- Transaction Date and Amount Row -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="TransactionDate" class="form-label">
+                                    <i class="fas fa-calendar"></i> تاريخ الحركة <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="TransactionDate" type="date" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                                <span asp-validation-for="TransactionDate" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Amount" class="form-label">
+                                    <i class="fas fa-coins"></i> المبلغ (د.ك) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Amount" type="number" step="0.001" class="form-control" placeholder="0.000" />
+                                <span asp-validation-for="Amount" class="text-danger"></span>
+                                <small class="text-muted">أدخل رقم موجب للقبض، وسالب للصرف</small>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Type -->
+                        <div class="mb-3">
+                            <label asp-for="Type" class="form-label">
+                                <i class="fas fa-tag"></i> نوع الحركة <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="Type" class="form-select" id="transactionType">
+                                <option value="">-- اختر نوع الحركة --</option>
+                                @foreach (var type in ViewBag.TransactionTypes as SelectList)
+                                {
+                                    <option value="@type.Value">@type.Text</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Type" class="text-danger"></span>
+                        </div>
+
+                        <!-- Employee and Truck -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="EmployeeId" class="form-label">
+                                    <i class="fas fa-user"></i> الموظف
+                                </label>
+                                <select asp-for="EmployeeId" class="form-select" id="employeeSelect">
+                                    <option value="">-- اختياري --</option>
+                                    @foreach (var emp in ViewBag.Employees)
+                                    {
+                                        <option value="@emp.Value">@emp.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="EmployeeId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="TruckId" class="form-label">
+                                    <i class="fas fa-truck"></i> الشاحنة
+                                </label>
+                                <select asp-for="TruckId" class="form-select" id="truckSelect">
+                                    <option value="">-- اختياري --</option>
+                                    @foreach (var truck in ViewBag.Trucks)
+                                    {
+                                        <option value="@truck.Value">@truck.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="TruckId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">
+                                <i class="fas fa-info-circle"></i> الوصف
+                            </label>
+                            <textarea asp-for="Description" class="form-control" rows="2" placeholder="وصف تفصيلي للحركة المالية..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <!-- Sond Number and Notes -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="SondNumber" class="form-label">
+                                    <i class="fas fa-receipt"></i> رقم السند
+                                </label>
+                                <input asp-for="SondNumber" type="text" class="form-control" placeholder="رقم السند (اختياري)" />
+                                <span asp-validation-for="SondNumber" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Notes" class="form-label">
+                                    <i class="fas fa-sticky-note"></i> ملاحظات
+                                </label>
+                                <input asp-for="Notes" type="text" class="form-control" placeholder="ملاحظات إضافية" />
+                                <span asp-validation-for="Notes" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Summary Card -->
+                        <div class="alert alert-info" id="summaryCard" style="display:none;">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle"></i> ملخص الحركة
+                            </h6>
+                            <div id="summaryContent"></div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> حفظ الحركة
+                            </button>
+                            <button type="reset" class="btn btn-warning">
+                                <i class="fas fa-redo"></i> إعادة تعيين
+                            </button>
+                            <a href="/CashTransactions" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> إلغاء
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-lightbulb"></i> نصائح سريعة:
+                    </h6>
+                    <ul class="mb-0">
+                        <li><strong>للقبض:</strong> أدخل المبلغ كرقم موجب (مثال: 100)</li>
+                        <li><strong>للصرف:</strong> أدخل المبلغ كرقم سالب (مثال: -100)</li>
+                        <li><strong>رقم السند:</strong> مهم للتوثيق والمراجعة</li>
+                        <li><strong>الوصف:</strong> اكتب تفاصيل واضحة لسهولة المتابعة لاحقاً</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        $(document).ready(function() {
+            // Real-time summary update
+            function updateSummary() {
+                const amount = parseFloat($('#Amount').val()) || 0;
+                const type = $('#transactionType option:selected').text();
+                const employee = $('#employeeSelect option:selected').text();
+                const truck = $('#truckSelect option:selected').text();
+                
+                if (amount !== 0 && type !== '-- اختر نوع الحركة --') {
+                    let summaryHtml = '<div class="row">';
+                    summaryHtml += '<div class="col-md-6">';
+                    summaryHtml += '<p class="mb-1"><strong>النوع:</strong> ' + type + '</p>';
+                    summaryHtml += '<p class="mb-1"><strong>المبلغ:</strong> <span class="' + (amount > 0 ? 'text-success' : 'text-danger') + '">' + Math.abs(amount).toFixed(3) + ' د.ك</span></p>';
+                    summaryHtml += '</div>';
+                    summaryHtml += '<div class="col-md-6">';
+                    if (employee !== '-- اختياري --') {
+                        summaryHtml += '<p class="mb-1"><strong>الموظف:</strong> ' + employee + '</p>';
+                    }
+                    if (truck !== '-- اختياري --') {
+                        summaryHtml += '<p class="mb-1"><strong>الشاحنة:</strong> ' + truck + '</p>';
+                    }
+                    summaryHtml += '</div>';
+                    summaryHtml += '</div>';
+                    summaryHtml += '<hr class="my-2">';
+                    summaryHtml += '<p class="mb-0"><strong>' + (amount > 0 ? '<i class="fas fa-arrow-down text-success"></i> قبض' : '<i class="fas fa-arrow-up text-danger"></i> صرف') + ':</strong> ' + Math.abs(amount).toFixed(3) + ' د.ك</p>';
+                    
+                    $('#summaryContent').html(summaryHtml);
+                    $('#summaryCard').slideDown();
+                } else {
+                    $('#summaryCard').slideUp();
+                }
+            }
+
+            // Bind events
+            $('#Amount, #transactionType, #employeeSelect, #truckSelect').on('change keyup', updateSummary);
+
+            // Form validation
+            $('#cashForm').on('submit', function(e) {
+                const amount = parseFloat($('#Amount').val()) || 0;
+                if (amount === 0) {
+                    e.preventDefault();
+                    alert('يجب إدخال مبلغ غير صفر');
+                    $('#Amount').focus();
+                    return false;
+                }
+                
+                if (!confirm('هل أنت متأكد من حفظ هذه الحركة المالية؟')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Auto-fill based on transaction type
+            $('#transactionType').on('change', function() {
+                const type = $(this).val();
+                
+                // Suggest amount sign based on type
+                const expenseTypes = ['وكالة', 'كارت_زيارة', 'سلفة', 'محاماة', 'مخالفات_مرور', 'تأمين', 'إقامة'];
+                const incomeTypes = ['قسط', 'رد_مخالفات', 'إيراد_سيارة', 'رد_تأمين_معاش'];
+                
+                if (expenseTypes.includes(type)) {
+                    $('#Amount').attr('placeholder', 'أدخل المبلغ بالسالب (مثال: -100)');
+                } else if (incomeTypes.includes(type)) {
+                    $('#Amount').attr('placeholder', 'أدخل المبلغ بالموجب (مثال: 100)');
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    
+    .text-danger {
+        font-size: 0.875rem;
+    }
+</style>

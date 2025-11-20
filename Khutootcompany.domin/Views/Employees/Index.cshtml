@@ -1,0 +1,214 @@
+﻿@model IEnumerable<Khutootcompany.Application.DTOs.EmployeeDto>
+
+@{
+    ViewData["Title"] = "إدارة الموظفين";
+    var filterTitle = ViewBag.FilterTitle ?? "جميع الموظفين";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-users"></i> @filterTitle
+            <span class="badge bg-primary">@Model.Count() موظف</span>
+        </h1>
+        <div>
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/Employees/Create" class="btn btn-success">
+                    <i class="fas fa-user-plus"></i> إضافة موظف جديد
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-filter"></i> فلترة سريعة
+            </h5>
+            <div class="btn-group flex-wrap" role="group">
+                <a href="/Employees" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> الكل
+                </a>
+                <a href="/Employees?filter=drivers" class="btn btn-outline-info">
+                    <i class="fas fa-steering-wheel"></i> السواقين فقط
+                </a>
+                <a href="/Employees?filter=admin-staff" class="btn btn-outline-secondary">
+                    <i class="fas fa-user-tie"></i> الموظفين الإداريين
+                </a>
+                <a href="/Employees?filter=expired-residency" class="btn btn-outline-danger">
+                    <i class="fas fa-exclamation-triangle"></i> إقامات منتهية
+                </a>
+                <a href="/Employees?filter=expiring-residency" class="btn btn-outline-warning">
+                    <i class="fas fa-clock"></i> إقامات تنتهي قريباً
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employees Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> قائمة الموظفين
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="employeesTable" class="table table-bordered table-hover" style="width:100%">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ت</th>
+                            <th>الاسم الكامل</th>
+                            <th>الرقم المدني</th>
+                            <th>الوظيفة</th>
+                            <th>الجنسية</th>
+                            <th>الهاتف</th>
+                            <th>انتهاء الإقامة</th>
+                            <th>الراتب (د.ك)</th>
+                            <th>الشاحنة الحالية</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var emp in Model)
+                        {
+                            var rowClass = "";
+                            if (emp.IsResidencyExpired)
+                            {
+                                rowClass = "expired-row";
+                            }
+                            else if (emp.IsResidencyExpiringSoon)
+                            {
+                                rowClass = "expiring-soon-row";
+                            }
+                            else if (emp.IsResidencyWarning)
+                            {
+                                rowClass = "warning-row";
+                            }
+
+                            <tr class="@rowClass">
+                                <td>@index</td>
+                                <td class="fw-bold">@emp.FullName</td>
+                                <td>@emp.CivilId</td>
+                                <td>
+                                    <span class="badge bg-info">@emp.JobTitleDisplay</span>
+                                    @if (emp.IsDriver)
+                                    {
+                                        <br /><span class="badge bg-success mt-1">سائق</span>
+                                    }
+                                </td>
+                                <td>@emp.NationalityDisplay</td>
+                                <td>@emp.PhoneNumber</td>
+                                <td>
+                                    @if (emp.ResidencyExpiryDate.HasValue)
+                                    {
+                                        <span class="@(emp.IsResidencyExpired ? "text-danger fw-bold" : emp.IsResidencyExpiringSoon ? "text-warning fw-bold" : "")">
+                                            @emp.ResidencyExpiryDate.Value.ToString("dd/MM/yyyy")
+                                        </span>
+                                        @if (emp.IsResidencyExpired)
+                                        {
+                                            <br />
+                                            <span class="badge bg-danger">منتهي</span>
+                                        }
+                                        else if (emp.IsResidencyExpiringSoon)
+                                        {
+                                            <br />
+                                            <span class="badge bg-warning text-dark">خلال شهر</span>
+                                        }
+                                    }
+                                </td>
+                                <td>
+                                    @if (emp.Salary.HasValue)
+                                    {
+                                        @emp.Salary.Value.ToString("N3")
+                                    }
+                                </td>
+                                <td>
+                                    @if (emp.IsDriver && !string.IsNullOrEmpty(emp.CurrentTruckPlate))
+                                    {
+                                        <a href="/Trucks/Details/@emp.CurrentTruckId" class="badge bg-primary">
+                                            @emp.CurrentTruckPlate
+                                        </a>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group-vertical btn-group-sm" role="group">
+                                        <a href="/Employees/Details/@emp.EmployeeId" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i> تفاصيل
+                                        </a>
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <a href="/Employees/Edit/@emp.EmployeeId" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-edit"></i> تعديل
+                                            </a>
+                                            <button onclick="confirmDelete(@emp.EmployeeId)" class="btn btn-danger btn-sm">
+                                                <i class="fas fa-trash"></i> حذف
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h6 class="card-title">
+                <i class="fas fa-info-circle"></i> دليل الألوان:
+            </h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="badge bg-danger">أحمر</span> = إقامة منتهية أو خلال شهر
+                </div>
+                <div class="col-md-4">
+                    <span class="badge bg-warning text-dark">برتقالي</span> = إقامة خلال شهرين
+                </div>
+                <div class="col-md-4">
+                    <span class="badge bg-success">أخضر</span> = إقامة صالحة
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#employeesTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"
+                },
+                "pageLength": 25,
+                "order": [[1, "asc"]]
+            });
+        });
+
+        function confirmDelete(employeeId) {
+            if (confirm('هل أنت متأكد من حذف هذا الموظف؟')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/Employees/Delete/' + employeeId;
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '__RequestVerificationToken';
+                csrfInput.value = $('input[name="__RequestVerificationToken"]').val();
+                
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+}

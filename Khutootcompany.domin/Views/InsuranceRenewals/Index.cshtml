@@ -1,0 +1,418 @@
+﻿@{
+    ViewData["Title"] = "تجديد التأمينات";
+    var expiredTrucks = ViewBag.ExpiredTrucks as IEnumerable<Khutootcompany.Application.DTOs.TruckDto> ?? new List<Khutootcompany.Application.DTOs.TruckDto>();
+    var expiringSoonTrucks = ViewBag.ExpiringSoonTrucks as IEnumerable<Khutootcompany.Application.DTOs.TruckDto> ?? new List<Khutootcompany.Application.DTOs.TruckDto>();
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="display-4">
+            <i class="fas fa-shield-alt"></i> إدارة تجديد التأمينات
+        </h1>
+        <p class="lead text-muted">
+            متابعة وتجديد تأمينات الشاحنات
+        </p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">تأمينات منتهية</h6>
+                            <h2 class="mb-0">@expiredTrucks.Count()</h2>
+                        </div>
+                        <i class="fas fa-times-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">تنتهي خلال 30 يوم</h6>
+                            <h2 class="mb-0">@expiringSoonTrucks.Count()</h2>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">تأمينات صالحة</h6>
+                            <h2 class="mb-0">
+                                @{
+                                    var totalTrucks = ViewBag.TotalTrucks ?? 0;
+                                    var validCount = totalTrucks - expiredTrucks.Count() - expiringSoonTrucks.Count();
+                                }
+                                @validCount
+                            </h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">إجمالي الشاحنات</h6>
+                            <h2 class="mb-0">@totalTrucks</h2>
+                        </div>
+                        <i class="fas fa-truck fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expired Insurance Trucks -->
+    @if (expiredTrucks.Any())
+    {
+        <div class="card shadow mb-4 border-danger border-3">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-circle"></i> تأمينات منتهية - يجب التجديد فوراً!
+                    <span class="badge bg-light text-danger">@expiredTrucks.Count() شاحنة</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ت</th>
+                                <th>اللوحة</th>
+                                <th>الموديل</th>
+                                <th>السائق</th>
+                                <th>تاريخ الانتهاء</th>
+                                <th>منتهي منذ</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int expiredIndex = 1;
+                            }
+                            @foreach (var truck in expiredTrucks.OrderBy(t => t.InsuranceExpiryDate))
+                            {
+                                var daysExpired = truck.InsuranceExpiryDate.HasValue 
+                                    ? Math.Abs((truck.InsuranceExpiryDate.Value - DateTime.Today).Days) 
+                                    : 0;
+
+                                <tr class="table-danger">
+                                    <td>@expiredIndex</td>
+                                    <td>
+                                        <a href="/Trucks/Details/@truck.TruckId" class="fw-bold text-decoration-none">
+                                            <i class="fas fa-truck"></i> @truck.PlateNumber
+                                        </a>
+                                    </td>
+                                    <td>@truck.Model</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(truck.CurrentDriverName))
+                                        {
+                                            <span>@truck.CurrentDriverName</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">لا يوجد</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong class="text-danger">
+                                            @truck.InsuranceExpiryDate?.ToString("dd/MM/yyyy")
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            @daysExpired يوم
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-success btn-sm" 
+                                                onclick="openRenewModal(@truck.TruckId, '@truck.PlateNumber')">
+                                            <i class="fas fa-redo"></i> تجديد التأمين
+                                        </button>
+                                    </td>
+                                </tr>
+                                expiredIndex++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Expiring Soon Insurance Trucks -->
+    @if (expiringSoonTrucks.Any())
+    {
+        <div class="card shadow mb-4 border-warning border-2">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock"></i> تأمينات تنتهي خلال 30 يوم
+                    <span class="badge bg-dark">@expiringSoonTrucks.Count() شاحنة</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ت</th>
+                                <th>اللوحة</th>
+                                <th>الموديل</th>
+                                <th>السائق</th>
+                                <th>تاريخ الانتهاء</th>
+                                <th>ينتهي بعد</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int soonIndex = 1;
+                            }
+                            @foreach (var truck in expiringSoonTrucks.OrderBy(t => t.InsuranceExpiryDate))
+                            {
+                                var daysRemaining = truck.InsuranceExpiryDate.HasValue 
+                                    ? (truck.InsuranceExpiryDate.Value - DateTime.Today).Days 
+                                    : 0;
+
+                                <tr class="table-warning">
+                                    <td>@soonIndex</td>
+                                    <td>
+                                        <a href="/Trucks/Details/@truck.TruckId" class="fw-bold text-decoration-none">
+                                            <i class="fas fa-truck"></i> @truck.PlateNumber
+                                        </a>
+                                    </td>
+                                    <td>@truck.Model</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(truck.CurrentDriverName))
+                                        {
+                                            <span>@truck.CurrentDriverName</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">لا يوجد</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong class="text-warning">
+                                            @truck.InsuranceExpiryDate?.ToString("dd/MM/yyyy")
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">
+                                            @daysRemaining يوم
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" 
+                                                onclick="openRenewModal(@truck.TruckId, '@truck.PlateNumber')">
+                                            <i class="fas fa-calendar-check"></i> تجديد مبكر
+                                        </button>
+                                    </td>
+                                </tr>
+                                soonIndex++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- All Good Message -->
+    @if (!expiredTrucks.Any() && !expiringSoonTrucks.Any())
+    {
+        <div class="card shadow border-success border-3">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-check-circle fa-5x text-success mb-4"></i>
+                <h3 class="text-success">ممتاز! جميع التأمينات صالحة</h3>
+                <p class="text-muted lead">
+                    لا توجد شاحنات بتأمينات منتهية أو تنتهي قريباً
+                </p>
+            </div>
+        </div>
+    }
+
+    <!-- Instructions Card -->
+    <div class="card shadow border-info mt-4">
+        <div class="card-body">
+            <h6 class="card-title text-info">
+                <i class="fas fa-info-circle"></i> إرشادات تجديد التأمين:
+            </h6>
+            <ul class="mb-0">
+                <li>يجب تجديد التأمين فور انتهائه لتجنب المخالفات</li>
+                <li>يُنصح بالتجديد قبل الانتهاء بأسبوع على الأقل</li>
+                <li>تكلفة التأمين تختلف حسب نوع الشاحنة والتغطية</li>
+                <li>احتفظ بنسخة من وثيقة التأمين الجديدة</li>
+                <li>سيتم تسجيل حركة مالية تلقائية عند التجديد</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Renew Insurance Modal -->
+<div class="modal fade" id="renewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-redo"></i> تجديد التأمين
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/InsuranceRenewals/Renew" id="renewForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="truckId" name="truckId" />
+                    
+                    <!-- Truck Info -->
+                    <div class="alert alert-info mb-4">
+                        <h6 class="mb-2">
+                            <i class="fas fa-truck"></i> الشاحنة:
+                        </h6>
+                        <p class="mb-0 h5" id="truckInfo">-</p>
+                    </div>
+
+                    <!-- Expiry Date -->
+                    <div class="mb-3">
+                        <label for="expiryDate" class="form-label">
+                            <i class="fas fa-calendar-times"></i> تاريخ انتهاء التأمين الجديد <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" class="form-control form-control-lg" id="expiryDate" name="expiryDate" required />
+                        <small class="text-muted" id="durationText"></small>
+                    </div>
+
+                    <!-- Cost -->
+                    <div class="mb-3">
+                        <label for="cost" class="form-label">
+                            <i class="fas fa-money-bill-wave"></i> تكلفة التأمين (د.ك) <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" step="0.001" class="form-control form-control-lg" 
+                               id="cost" name="cost" placeholder="0.000" required />
+                    </div>
+
+                    <!-- Sond Number -->
+                    <div class="mb-3">
+                        <label for="sondNumber" class="form-label">
+                            <i class="fas fa-receipt"></i> رقم السند (اختياري)
+                        </label>
+                        <input type="text" class="form-control" id="sondNumber" name="sondNumber" 
+                               placeholder="رقم سند الدفع" />
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">
+                            <i class="fas fa-sticky-note"></i> ملاحظات (اختياري)
+                        </label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                  placeholder="ملاحظات حول التجديد..."></textarea>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="alert alert-success" id="summaryAlert" style="display:none;">
+                        <h6 class="alert-heading">ملخص التجديد:</h6>
+                        <p class="mb-1"><strong>المدة:</strong> <span id="summaryDuration">-</span></p>
+                        <p class="mb-0"><strong>التكلفة:</strong> <span id="summaryCost" class="text-success fw-bold">0.000 د.ك</span></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-check"></i> تأكيد التجديد
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openRenewModal(truckId, truckPlate) {
+            $('#truckId').val(truckId);
+            $('#truckInfo').text(truckPlate);
+            
+            // Set default expiry date (1 year from today)
+            const today = new Date();
+            const nextYear = new Date(today);
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+            $('#expiryDate').val(nextYear.toISOString().split('T')[0]);
+            
+            updateDuration();
+            $('#renewModal').modal('show');
+        }
+
+        function updateDuration() {
+            const expiryDate = new Date($('#expiryDate').val());
+            const today = new Date();
+            
+            if (expiryDate) {
+                const diffTime = Math.abs(expiryDate - today);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffMonths = Math.round(diffDays / 30);
+                
+                $('#durationText').html(`<i class="fas fa-clock"></i> المدة: ${diffMonths} شهر (${diffDays} يوم)`);
+                $('#summaryDuration').text(`${diffMonths} شهر (${diffDays} يوم)`);
+                $('#summaryAlert').slideDown();
+            }
+        }
+
+        $(document).ready(function() {
+            $('#expiryDate').on('change', updateDuration);
+            
+            $('#cost').on('input', function() {
+                const cost = parseFloat($(this).val()) || 0;
+                $('#summaryCost').text(cost.toFixed(3) + ' د.ك');
+            });
+
+            $('#renewForm').on('submit', function(e) {
+                const cost = parseFloat($('#cost').val());
+                if (!cost || cost <= 0) {
+                    e.preventDefault();
+                    alert('يجب إدخال تكلفة التأمين');
+                    return false;
+                }
+
+                if (!confirm('هل أنت متأكد من تجديد التأمين؟\n\nسيتم تحديث تاريخ التأمين وتسجيل حركة مالية بالتكلفة.')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    .opacity-50 {
+        opacity: 0.5;
+    }
+    
+    .border-3 {
+        border-width: 3px !important;
+    }
+    
+    .card {
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+    }
+</style>

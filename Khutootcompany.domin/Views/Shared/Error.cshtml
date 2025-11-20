@@ -1,0 +1,35 @@
+﻿@* ============================================ *@
+@* Views/Shared/Error.cshtml *@
+@* ============================================ *@
+@model ErrorViewModel
+
+@{
+    ViewData["Title"] = "خطأ";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-5x text-danger mb-4"></i>
+                    <h1 class="text-danger">خطأ</h1>
+                    <p class="lead">حدث خطأ أثناء معالجة طلبك.</p>
+                    
+                    @if (Model?.ShowRequestId == true)
+                    {
+                        <p>
+                            <strong>Request ID:</strong> <code>@Model.RequestId</code>
+                        </p>
+                    }
+                    
+                    <hr />
+                    
+                    <a href="/" class="btn btn-primary">
+                        <i class="fas fa-home"></i> العودة للرئيسية
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

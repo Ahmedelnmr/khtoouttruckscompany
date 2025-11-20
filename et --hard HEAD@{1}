@@ -1,0 +1,25 @@
+[33m460f373[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: pull --progress --no-edit --no-stat --recurse-submodules=no origin: Merge made by the 'ort' strategy.
+[33m036b7d5[m HEAD@{1}: commit: sk
+[33mfd21d0e[m HEAD@{2}: commit: da
+[33md3af293[m HEAD@{3}: commit: s
+[33m556ff6a[m HEAD@{4}: pull --progress --no-edit --no-stat --recurse-submodules=no origin: Fast-forward
+[33mdc4becf[m HEAD@{5}: commit: services
+[33m76b8819[m HEAD@{6}: pull --progress --no-edit --no-stat --recurse-submodules=no origin: Fast-forward
+[33m491016f[m HEAD@{7}: checkout: moving from mohamed_sharkway to master
+[33mdeab312[m[33m ([m[1;31morigin/mohamed_sharkway[m[33m, [m[1;32mmohamed_sharkway[m[33m)[m HEAD@{8}: pull --progress --no-edit --no-stat --recurse-submodules=no origin: Fast-forward
+[33m6392492[m[33m ([m[1;31morigin/test[m[33m, [m[1;31morigin/mohamed_ayman[m[33m, [m[1;32mmohamed_ayman[m[33m)[m HEAD@{9}: checkout: moving from master to mohamed_sharkway
+[33m491016f[m HEAD@{10}: pull --progress --no-edit --no-stat --recurse-submodules=no origin: Fast-forward
+[33m487b860[m HEAD@{11}: checkout: moving from mohamed_ayman to master
+[33m6392492[m[33m ([m[1;31morigin/test[m[33m, [m[1;31morigin/mohamed_ayman[m[33m, [m[1;32mmohamed_ayman[m[33m)[m HEAD@{12}: checkout: moving from master to mohamed_ayman
+[33m487b860[m HEAD@{13}: commit: y
+[33m4ecb797[m HEAD@{14}: checkout: moving from ahmed_namer to master
+[33m286e866[m[33m ([m[1;31morigin/ahmed_namer[m[33m, [m[1;32mahmed_namer[m[33m)[m HEAD@{15}: pull --progress --no-edit --no-stat --recurse-submodules=no origin: Fast-forward
+[33ma695cd8[m HEAD@{16}: checkout: moving from master to ahmed_namer
+[33m4ecb797[m HEAD@{17}: pull: Fast-forward
+[33m6392492[m[33m ([m[1;31morigin/test[m[33m, [m[1;31morigin/mohamed_ayman[m[33m, [m[1;32mmohamed_ayman[m[33m)[m HEAD@{18}: checkout: moving from ahmed_namer to master
+[33ma695cd8[m HEAD@{19}: commit: base_entity
+[33m6392492[m[33m ([m[1;31morigin/test[m[33m, [m[1;31morigin/mohamed_ayman[m[33m, [m[1;32mmohamed_ayman[m[33m)[m HEAD@{20}: checkout: moving from branchName to ahmed_namer
+[33m6392492[m[33m ([m[1;31morigin/test[m[33m, [m[1;31morigin/mohamed_ayman[m[33m, [m[1;32mmohamed_ayman[m[33m)[m HEAD@{21}: checkout: moving from master to branchName
+[33m6392492[m[33m ([m[1;31morigin/test[m[33m, [m[1;31morigin/mohamed_ayman[m[33m, [m[1;32mmohamed_ayman[m[33m)[m HEAD@{22}: checkout: moving from master to master
+[33m6392492[m[33m ([m[1;31morigin/test[m[33m, [m[1;31morigin/mohamed_ayman[m[33m, [m[1;32mmohamed_ayman[m[33m)[m HEAD@{23}: commit: Add project files.
+[33m6a00845[m HEAD@{24}: commit (initial): Add .gitattributes and .gitignore.

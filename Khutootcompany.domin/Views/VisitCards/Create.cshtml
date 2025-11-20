@@ -1,0 +1,301 @@
+﻿@model Khutootcompany.Application.DTOs.CreateVisitCardDto
+
+@{
+    ViewData["Title"] = "إضافة كارت زيارة جديد";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-plus-circle"></i> إضافة كارت زيارة جديد
+        </h1>
+        <a href="/VisitCards" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع للقائمة
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-id-card"></i> بيانات كارت الزيارة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="Create" id="visitCardForm">
+                        <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+                        <!-- Employee Selection -->
+                        <div class="mb-4">
+                            <label asp-for="EmployeeId" class="form-label">
+                                <i class="fas fa-user"></i> الموظف <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="EmployeeId" class="form-select form-select-lg" id="employeeSelect" required>
+                                <option value="">-- اختر الموظف --</option>
+                                @foreach (var emp in ViewBag.Employees)
+                                {
+                                    <option value="@emp.Value">@emp.Text</option>
+                                }
+                            </select>
+                            <span asp-validation-for="EmployeeId" class="text-danger"></span>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> اختر الموظف الذي سيُصدر له الكارت
+                            </small>
+                        </div>
+
+                        <!-- Truck Selection (Optional) -->
+                        <div class="mb-4">
+                            <label asp-for="TruckId" class="form-label">
+                                <i class="fas fa-truck"></i> الشاحنة (اختياري)
+                            </label>
+                            <select asp-for="TruckId" class="form-select" id="truckSelect">
+                                <option value="">-- اختياري: ربط بشاحنة معينة --</option>
+                                @foreach (var truck in ViewBag.Trucks)
+                                {
+                                    <option value="@truck.Value">@truck.Text</option>
+                                }
+                            </select>
+                            <span asp-validation-for="TruckId" class="text-danger"></span>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> يمكن ترك هذا الحقل فارغاً إذا لم يكن الكارت مرتبط بشاحنة محددة
+                            </small>
+                        </div>
+
+                        <!-- Dates Row -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="IssueDate" class="form-label">
+                                    <i class="fas fa-calendar-plus"></i> تاريخ الإصدار <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="IssueDate" type="date" class="form-control" id="issueDate" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                                <span asp-validation-for="IssueDate" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="ExpiryDate" class="form-label">
+                                    <i class="fas fa-calendar-times"></i> تاريخ الانتهاء <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="ExpiryDate" type="date" class="form-control" id="expiryDate" required />
+                                <span asp-validation-for="ExpiryDate" class="text-danger"></span>
+                                <small class="text-muted" id="durationText"></small>
+                            </div>
+                        </div>
+
+                        <!-- Price and Payment Status -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="Price" class="form-label">
+                                    <i class="fas fa-money-bill-wave"></i> السعر (د.ك)
+                                </label>
+                                <input asp-for="Price" type="number" step="0.001" class="form-control form-control-lg" value="15.000" readonly style="background-color: #e9ecef; font-weight: bold;" />
+                                <span asp-validation-for="Price" class="text-danger"></span>
+                                <small class="text-success">
+                                    <i class="fas fa-info-circle"></i> السعر الثابت لكارت الزيارة: 15 د.ك
+                                </small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="fas fa-credit-card"></i> حالة الدفع
+                                </label>
+                                <div class="form-check form-switch" style="padding-top: 10px;">
+                                    <input asp-for="IsPaid" class="form-check-input" type="checkbox" id="isPaidSwitch" style="width: 3rem; height: 1.5rem;">
+                                    <label class="form-check-label" for="isPaidSwitch" style="padding-top: 5px; margin-right: 10px;">
+                                        <strong id="paidLabel">غير مدفوع</strong>
+                                    </label>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-hand-holding-usd"></i> حدد إذا تم الدفع أم لا
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Intermediary Info -->
+                        <div class="card mb-4 bg-light">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-user-tie"></i> بيانات الوسيط (اختياري)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="IntermediaryName" class="form-label">
+                                            <i class="fas fa-signature"></i> اسم الوسيط
+                                        </label>
+                                        <input asp-for="IntermediaryName" type="text" class="form-control" placeholder="اسم الوسيط (إن وجد)" maxlength="100" />
+                                        <span asp-validation-for="IntermediaryName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="IntermediaryPhone" class="form-label">
+                                            <i class="fas fa-phone"></i> رقم هاتف الوسيط
+                                        </label>
+                                        <input asp-for="IntermediaryPhone" type="tel" class="form-control" placeholder="+965 12345678" maxlength="20" />
+                                        <span asp-validation-for="IntermediaryPhone" class="text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sond Number and Notes -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="SondNumber" class="form-label">
+                                    <i class="fas fa-receipt"></i> رقم السند
+                                </label>
+                                <input asp-for="SondNumber" type="text" class="form-control" placeholder="رقم السند (اختياري)" maxlength="50" />
+                                <span asp-validation-for="SondNumber" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Notes" class="form-label">
+                                    <i class="fas fa-sticky-note"></i> ملاحظات
+                                </label>
+                                <input asp-for="Notes" type="text" class="form-control" placeholder="ملاحظات إضافية" maxlength="500" />
+                                <span asp-validation-for="Notes" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Summary Card -->
+                        <div class="alert alert-info" id="summaryCard">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle"></i> ملخص الكارت
+                            </h6>
+                            <div id="summaryContent">
+                                <p class="mb-1"><strong>الموظف:</strong> <span id="summaryEmployee">غير محدد</span></p>
+                                <p class="mb-1"><strong>الشاحنة:</strong> <span id="summaryTruck">غير محددة</span></p>
+                                <p class="mb-1"><strong>المدة:</strong> <span id="summaryDuration">3 أشهر (افتراضي)</span></p>
+                                <p class="mb-1"><strong>السعر:</strong> <span class="text-success fw-bold">15.000 د.ك</span></p>
+                                <p class="mb-0"><strong>حالة الدفع:</strong> <span id="summaryPayment" class="badge bg-danger">غير مدفوع</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> حفظ الكارت
+                            </button>
+                            <button type="reset" class="btn btn-warning">
+                                <i class="fas fa-redo"></i> إعادة تعيين
+                            </button>
+                            <a href="/VisitCards" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> إلغاء
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="card mt-3 shadow border-info">
+                <div class="card-body">
+                    <h6 class="card-title text-info">
+                        <i class="fas fa-lightbulb"></i> نصائح سريعة:
+                    </h6>
+                    <ul class="mb-0">
+                        <li>السعر الثابت لكارت الزيارة: <strong>15 د.ك</strong></li>
+                        <li>المدة الافتراضية: <strong>3 أشهر</strong> من تاريخ الإصدار</li>
+                        <li>يمكن ربط الكارت بشاحنة معينة أو تركه عام</li>
+                        <li>سيتم تسجيل حركة مالية تلقائياً إذا تم تحديد "مدفوع"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        $(document).ready(function() {
+            // Auto-calculate expiry date (3 months from issue date)
+            $('#issueDate').on('change', function() {
+                const issueDate = new Date($(this).val());
+                if (issueDate) {
+                    const expiryDate = new Date(issueDate);
+                    expiryDate.setMonth(expiryDate.getMonth() + 3);
+                    $('#expiryDate').val(expiryDate.toISOString().split('T')[0]);
+                    updateDuration();
+                }
+            });
+
+            // Calculate duration between dates
+            function updateDuration() {
+                const issueDate = new Date($('#issueDate').val());
+                const expiryDate = new Date($('#expiryDate').val());
+                
+                if (issueDate && expiryDate) {
+                    const diffTime = Math.abs(expiryDate - issueDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const diffMonths = Math.round(diffDays / 30);
+                    
+                    $('#durationText').html(`<i class="fas fa-clock"></i> المدة: ${diffMonths} شهر (${diffDays} يوم)`);
+                    $('#summaryDuration').text(`${diffMonths} شهر (${diffDays} يوم)`);
+                }
+            }
+
+            $('#expiryDate').on('change', updateDuration);
+
+            // Update payment label
+            $('#isPaidSwitch').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#paidLabel').text('مدفوع').removeClass('text-danger').addClass('text-success');
+                    $('#summaryPayment').removeClass('bg-danger').addClass('bg-success').text('مدفوع');
+                } else {
+                    $('#paidLabel').text('غير مدفوع').removeClass('text-success').addClass('text-danger');
+                    $('#summaryPayment').removeClass('bg-success').addClass('bg-danger').text('غير مدفوع');
+                }
+            });
+
+            // Update summary on change
+            function updateSummary() {
+                const employeeName = $('#employeeSelect option:selected').text();
+                const truckName = $('#truckSelect option:selected').text();
+                
+                $('#summaryEmployee').text(employeeName !== '-- اختر الموظف --' ? employeeName : 'غير محدد');
+                $('#summaryTruck').text(truckName !== '-- اختياري: ربط بشاحنة معينة --' ? truckName : 'غير محددة');
+            }
+
+            $('#employeeSelect, #truckSelect').on('change', updateSummary);
+
+            // Initialize
+            const today = new Date();
+            const threeMonthsLater = new Date(today);
+            threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+            $('#expiryDate').val(threeMonthsLater.toISOString().split('T')[0]);
+            updateDuration();
+
+            // Form validation
+            $('#visitCardForm').on('submit', function(e) {
+                const employeeId = $('#employeeSelect').val();
+                if (!employeeId) {
+                    e.preventDefault();
+                    alert('يجب اختيار الموظف');
+                    $('#employeeSelect').focus();
+                    return false;
+                }
+
+                if (!confirm('هل أنت متأكد من حفظ كارت الزيارة؟')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+</style>

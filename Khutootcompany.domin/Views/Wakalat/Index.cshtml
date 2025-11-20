@@ -1,0 +1,429 @@
+﻿@model IEnumerable<Khutootcompany.Application.DTOs.WakalaDto>
+
+@{
+    ViewData["Title"] = "الوكالات";
+    var filterTitle = ViewBag.FilterTitle ?? "جميع الوكالات";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-file-contract"></i> الوكالات
+            <span class="badge bg-primary">@Model.Count() وكالة</span>
+        </h1>
+        <div>
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/Wakalat/Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> إضافة وكالة جديدة
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="card mb-4 shadow">
+        <div class="card-body">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-filter"></i> فلترة سريعة
+            </h5>
+            <div class="btn-group flex-wrap" role="group">
+                <a href="/Wakalat" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> الكل
+                </a>
+                <a href="/Wakalat?filter=expired" class="btn btn-outline-danger">
+                    <i class="fas fa-exclamation-triangle"></i> منتهية
+                </a>
+                <a href="/Wakalat?filter=expiring" class="btn btn-outline-warning">
+                    <i class="fas fa-clock"></i> تنتهي قريباً (30 يوم)
+                </a>
+                <a href="/Wakalat?filter=general" class="btn btn-outline-info">
+                    <i class="fas fa-globe"></i> وكالات عامة
+                </a>
+                <a href="/Wakalat?filter=truck-specific" class="btn btn-outline-secondary">
+                    <i class="fas fa-truck"></i> وكالات على شاحنات
+                </a>
+                <a href="/Wakalat?filter=valid" class="btn btn-outline-success">
+                    <i class="fas fa-check-circle"></i> صالحة
+                </a>
+                <a href="/Wakalat?filter=unpaid" class="btn btn-outline-danger">
+                    <i class="fas fa-money-bill-wave"></i> غير مدفوعة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-success text-white shadow-sm">
+                <div class="card-body py-3">
+                    <h6 class="card-title mb-1">
+                        <i class="fas fa-check-circle"></i> صالحة
+                    </h6>
+                    <h4 class="mb-0">@Model.Count(w => !w.IsExpired && !w.IsExpiringSoon)</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark shadow-sm">
+                <div class="card-body py-3">
+                    <h6 class="card-title mb-1">
+                        <i class="fas fa-clock"></i> تنتهي قريباً
+                    </h6>
+                    <h4 class="mb-0">@Model.Count(w => w.IsExpiringSoon)</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white shadow-sm">
+                <div class="card-body py-3">
+                    <h6 class="card-title mb-1">
+                        <i class="fas fa-times-circle"></i> منتهية
+                    </h6>
+                    <h4 class="mb-0">@Model.Count(w => w.IsExpired)</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white shadow-sm">
+                <div class="card-body py-3">
+                    <h6 class="card-title mb-1">
+                        <i class="fas fa-globe"></i> عامة
+                    </h6>
+                    <h4 class="mb-0">@Model.Count(w => w.IsGeneral)</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white shadow-sm">
+                <div class="card-body py-3">
+                    <h6 class="card-title mb-1">
+                        <i class="fas fa-truck"></i> شاحنات
+                    </h6>
+                    <h4 class="mb-0">@Model.Count(w => !w.IsGeneral && w.TruckId.HasValue)</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-primary text-white shadow-sm">
+                <div class="card-body py-3">
+                    <h6 class="card-title mb-1">
+                        <i class="fas fa-calculator"></i> الإجمالي
+                    </h6>
+                    <h4 class="mb-0">@Model.Where(w => w.IsPaid).Sum(w => w.Price).ToString("N3") د.ك</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wakalat Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> @filterTitle
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="wakalatTable" class="table table-bordered table-hover" style="width:100%">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ت</th>
+                            <th>الموظف</th>
+                            <th>النوع</th>
+                            <th>الشاحنة</th>
+                            <th>تاريخ الإصدار</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>المدة المتبقية</th>
+                            <th>الحالة</th>
+                            <th>السعر</th>
+                            <th>الدفع</th>
+                            <th>رقم السند</th>
+                            <th>ملاحظات</th>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <th>إجراءات</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var wakala in Model.OrderByDescending(w => w.IssueDate))
+                        {
+                            var rowClass = "";
+                            if (wakala.IsExpired)
+                            {
+                                rowClass = "table-danger";
+                            }
+                            else if (wakala.IsExpiringSoon)
+                            {
+                                rowClass = "table-warning";
+                            }
+                            else if (wakala.IsWarning)
+                            {
+                                rowClass = "table-info";
+                            }
+
+                            var daysRemaining = (wakala.ExpiryDate - DateTime.Today).Days;
+
+                            <tr class="@rowClass">
+                                <td>@index</td>
+                                <td>
+                                    <a href="/Employees/Details/@wakala.EmployeeId" class="text-decoration-none">
+                                        <i class="fas fa-user"></i> @wakala.EmployeeName
+                                    </a>
+                                </td>
+                                <td class="text-center">
+                                    @if (wakala.IsGeneral)
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-globe"></i> وكالة عامة
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-truck"></i> على شاحنة
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (wakala.TruckId.HasValue && !string.IsNullOrEmpty(wakala.TruckPlate))
+                                    {
+                                        <a href="/Trucks/Details/@wakala.TruckId" class="text-decoration-none">
+                                            <i class="fas fa-truck"></i> @wakala.TruckPlate
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>@wakala.IssueDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <strong class="@(wakala.IsExpired ? "text-danger" : wakala.IsExpiringSoon ? "text-warning" : "")">
+                                        @wakala.ExpiryDate.ToString("dd/MM/yyyy")
+                                    </strong>
+                                </td>
+                                <td class="text-center">
+                                    @if (wakala.IsExpired)
+                                    {
+                                        <span class="badge bg-danger">
+                                            منتهي منذ @Math.Abs(daysRemaining) يوم
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge @(daysRemaining <= 30 ? "bg-warning text-dark" : daysRemaining <= 60 ? "bg-info" : "bg-success")">
+                                            @daysRemaining يوم
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (wakala.IsExpired)
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle"></i> منتهي
+                                        </span>
+                                    }
+                                    else if (wakala.IsExpiringSoon)
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-exclamation-triangle"></i> ينتهي قريباً
+                                        </span>
+                                    }
+                                    else if (wakala.IsWarning)
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-info-circle"></i> تحذير
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> صالح
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <strong>@wakala.Price.ToString("N3") د.ك</strong>
+                                </td>
+                                <td class="text-center">
+                                    @if (wakala.IsPaid)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> مدفوع
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times"></i> غير مدفوع
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(wakala.SondNumber))
+                                    {
+                                        <span class="badge bg-info">@wakala.SondNumber</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(wakala.Notes))
+                                    {
+                                        <small class="text-muted">@wakala.Notes</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <td>
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            <a href="/Wakalat/Details/@wakala.WakalaId" class="btn btn-info btn-sm">
+                                                <i class="fas fa-eye"></i> تفاصيل
+                                            </a>
+                                            <a href="/Wakalat/Edit/@wakala.WakalaId" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-edit"></i> تعديل
+                                            </a>
+                                            @if (wakala.IsExpired)
+                                            {
+                                                <a href="/Wakalat/Renew/@wakala.WakalaId" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-redo"></i> تجديد
+                                                </a>
+                                            }
+                                            <button onclick="confirmDelete(@wakala.WakalaId)" class="btn btn-danger btn-sm">
+                                                <i class="fas fa-trash"></i> حذف
+                                            </button>
+                                        </div>
+                                    </td>
+                                }
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="card mt-3 shadow">
+        <div class="card-body">
+            <h6 class="card-title">
+                <i class="fas fa-info-circle"></i> دليل الألوان والأنواع:
+            </h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>الحالة:</strong></p>
+                    <span class="badge bg-danger me-1">أحمر</span> = منتهي (يجب التجديد فوراً)
+                    <br>
+                    <span class="badge bg-warning text-dark me-1">برتقالي</span> = ينتهي خلال 30 يوم
+                    <br>
+                    <span class="badge bg-info me-1">أزرق</span> = ينتهي خلال 60 يوم
+                    <br>
+                    <span class="badge bg-success me-1">أخضر</span> = صالح
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>النوع:</strong></p>
+                    <span class="badge bg-info me-1">
+                        <i class="fas fa-globe"></i> وكالة عامة
+                    </span> = تشمل جميع الشاحنات
+                    <br>
+                    <span class="badge bg-secondary me-1">
+                        <i class="fas fa-truck"></i> على شاحنة
+                    </span> = خاصة بشاحنة واحدة فقط
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Important Notes -->
+    <div class="card mt-3 shadow border-warning">
+        <div class="card-body">
+            <h6 class="card-title text-warning">
+                <i class="fas fa-exclamation-triangle"></i> ملاحظات مهمة:
+            </h6>
+            <ul class="mb-0">
+                <li><strong>الوكالة العامة:</strong> تشمل جميع الشاحنات والمعاملات</li>
+                <li><strong>الوكالة على شاحنة:</strong> خاصة بشاحنة واحدة فقط</li>
+                <li>يجب تجديد الوكالات المنتهية قبل إجراء أي معاملات</li>
+                <li>الأسعار تختلف حسب نوع الوكالة (عامة أو خاصة)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف هذه الوكالة؟</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> 
+                    سيتم حذف السجل نهائياً ولا يمكن استرجاعه!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> تأكيد الحذف
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#wakalatTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"
+                },
+                "pageLength": 25,
+                "order": [[4, "desc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": -1 }
+                ]
+            });
+        });
+
+        function confirmDelete(wakalaId) {
+            $('#deleteForm').attr('action', '/Wakalat/Delete/' + wakalaId);
+            $('#deleteModal').modal('show');
+        }
+    </script>
+}
+
+<style>
+    .table-danger {
+        background-color: #f8d7da !important;
+    }
+    .table-warning {
+        background-color: #fff3cd !important;
+    }
+    .table-info {
+        background-color: #cff4fc !important;
+    }
+</style>

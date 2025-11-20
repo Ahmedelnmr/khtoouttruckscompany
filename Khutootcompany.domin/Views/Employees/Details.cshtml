@@ -1,0 +1,173 @@
+﻿@model Khutootcompany.Application.DTOs.EmployeeDto
+
+@{
+    ViewData["Title"] = "تفاصيل الموظف";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-user"></i> تفاصيل الموظف: @Model.FullName
+        </h1>
+        <div>
+            <a href="/Employees" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع
+            </a>
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/Employees/Edit/@Model.EmployeeId" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> تعديل
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="employeeTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button">
+                <i class="fas fa-info-circle"></i> البيانات الأساسية
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="residency-tab" data-bs-toggle="tab" data-bs-target="#residency" type="button">
+                <i class="fas fa-id-card"></i> الإقامة
+            </button>
+        </li>
+        @if (Model.IsDriver)
+        {
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="truck-tab" data-bs-toggle="tab" data-bs-target="#truck" type="button">
+                    <i class="fas fa-truck"></i> الشاحنة
+                </button>
+            </li>
+        }
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button">
+                <i class="fas fa-history"></i> سجل التغييرات
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3" id="employeeTabContent">
+        <!-- Basic Info Tab -->
+        <div class="tab-pane fade show active" id="info" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>الاسم الكامل:</strong> @Model.FullName</p>
+                            <p><strong>الرقم المدني:</strong> @Model.CivilId</p>
+                            <p><strong>الوظيفة:</strong> @Model.JobTitleDisplay</p>
+                            <p><strong>الجنسية:</strong> @Model.NationalityDisplay</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>رقم الهاتف:</strong> @Model.PhoneNumber</p>
+                            <p><strong>الراتب:</strong> @(Model.Salary.HasValue ? Model.Salary.Value.ToString("N3") + " د.ك" : "غير محدد")</p>
+                            <p><strong>سائق:</strong> @(Model.IsDriver ? "نعم" : "لا")</p>
+                            <p><strong>موظف رسمي:</strong> @(Model.IsCompanyEmployee ? "نعم" : "لا")</p>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <hr />
+                        <p><strong>ملاحظات:</strong> @Model.Notes</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Residency Tab -->
+        <div class="tab-pane fade" id="residency" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    @if (Model.ResidencyExpiryDate.HasValue)
+                    {
+                        var isExpired = Model.IsResidencyExpired;
+                        var isExpiringSoon = Model.IsResidencyExpiringSoon;
+                        var cardClass = isExpired ? "bg-danger text-white" : isExpiringSoon ? "bg-warning" : "bg-success text-white";
+
+                        <div class="alert @cardClass">
+                            <h5>
+                                <i class="fas fa-calendar-alt"></i> حالة الإقامة
+                            </h5>
+                            <p class="mb-1"><strong>تاريخ البداية:</strong> @Model.ResidencyStartDate?.ToString("dd/MM/yyyy")</p>
+                            <p class="mb-1"><strong>تاريخ الانتهاء:</strong> @Model.ResidencyExpiryDate.Value.ToString("dd/MM/yyyy")</p>
+                            <p class="mb-0">
+                                <strong>الحالة:</strong> 
+                                @if (isExpired)
+                                {
+                                    <span class="badge bg-light text-danger">منتهي</span>
+                                }
+                                else if (isExpiringSoon)
+                                {
+                                    <span class="badge bg-light text-warning">ينتهي قريباً</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-success">صالح</span>
+                                }
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> لا توجد بيانات إقامة مسجلة
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.BankCardNumber))
+                    {
+                        <hr />
+                        <h5>بطاقة البنك</h5>
+                        <p><strong>رقم البطاقة:</strong> @Model.BankCardNumber</p>
+                        <p><strong>تاريخ الانتهاء:</strong> @Model.BankCardExpiryMonth/@Model.BankCardExpiryYear</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Truck Tab (for drivers only) -->
+        @if (Model.IsDriver)
+        {
+            <div class="tab-pane fade" id="truck" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.CurrentTruckPlate))
+                        {
+                            <div class="alert alert-success">
+                                <h5><i class="fas fa-truck"></i> الشاحنة الحالية</h5>
+                                <p class="mb-0">
+                                    <strong>رقم اللوحة:</strong> 
+                                    <a href="/Trucks/Details/@Model.CurrentTruckId" class="btn btn-sm btn-primary">
+                                        @Model.CurrentTruckPlate
+                                    </a>
+                                </p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> لم يتم تعيين شاحنة لهذا السائق
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Audit Tab -->
+        <div class="tab-pane fade" id="audit" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <p><strong>أضيف بواسطة:</strong> @Model.CreatedBy في @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
+                    @if (Model.UpdatedBy != null)
+                    {
+                        <p><strong>آخر تحديث بواسطة:</strong> @Model.UpdatedBy في @Model.UpdatedDate?.ToString("dd/MM/yyyy HH:mm")</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,231 @@
+﻿@model Khutootcompany.Application.DTOs.TruckDto
+
+@{
+    ViewData["Title"] = "إضافة شاحنة جديدة";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-truck"></i> إضافة شاحنة جديدة
+        </h1>
+        <a href="/Trucks" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع للقائمة
+        </a>
+    </div>
+
+    <form method="post" asp-action="Create">
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+        <div class="row">
+            <!-- القسم الأيمن: بيانات أساسية -->
+            <div class="col-md-6">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-info-circle"></i> البيانات الأساسية</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="PlateNumber" class="form-label fw-bold">
+                                <i class="fas fa-hashtag"></i> رقم اللوحة *
+                            </label>
+                            <input asp-for="PlateNumber" class="form-control form-control-lg" placeholder="مثال: 12345" autofocus required />
+                            <span asp-validation-for="PlateNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="AdminNumber" class="form-label">
+                                <i class="fas fa-id-badge"></i> رقم الإداري (91 أو 95)
+                            </label>
+                            <input asp-for="AdminNumber" class="form-control" placeholder="91 أو 95" maxlength="10" />
+                            <span asp-validation-for="AdminNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Model" class="form-label fw-bold">
+                                <i class="fas fa-car"></i> الموديل *
+                            </label>
+                            <input asp-for="Model" class="form-control" placeholder="مثال: مرسيدس أكتروس" required />
+                            <span asp-validation-for="Model" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Year" class="form-label">
+                                    <i class="fas fa-calendar"></i> السنة
+                                </label>
+                                <input asp-for="Year" type="number" class="form-control" min="1990" max="2030" placeholder="2024" />
+                                <span asp-validation-for="Year" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Color" class="form-label">
+                                    <i class="fas fa-palette"></i> اللون
+                                </label>
+                                <input asp-for="Color" class="form-control" placeholder="أبيض، أزرق، إلخ" />
+                                <span asp-validation-for="Color" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="LicenseType" class="form-label fw-bold">
+                                <i class="fas fa-certificate"></i> نوع الترخيص *
+                            </label>
+                            <select asp-for="LicenseType" class="form-select" asp-items="ViewBag.LicenseTypes" required>
+                                <option value="">-- اختر نوع الترخيص --</option>
+                            </select>
+                            <span asp-validation-for="LicenseType" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PreviousPlateNumber" class="form-label">
+                                <i class="fas fa-history"></i> اللوحة السابقة
+                            </label>
+                            <input asp-for="PreviousPlateNumber" class="form-control" placeholder="إن وجدت" />
+                            <span asp-validation-for="PreviousPlateNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- القسم الأيسر: التأمين و PAM -->
+            <div class="col-md-6">
+                <!-- بطاقة التأمين -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-shield-alt"></i> بيانات التأمين</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="InsuranceExpiryDate" class="form-label">
+                                <i class="fas fa-calendar-check"></i> تاريخ انتهاء التأمين
+                            </label>
+                            <input asp-for="InsuranceExpiryDate" type="date" class="form-control" />
+                            <span asp-validation-for="InsuranceExpiryDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>ملاحظة:</strong> يمكنك إدخال تاريخ التأمين بالتفصيل أدناه
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="InsuranceDay" class="form-label">اليوم</label>
+                                <input asp-for="InsuranceDay" type="number" class="form-control" min="1" max="31" placeholder="15" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="InsuranceMonth" class="form-label">الشهر</label>
+                                <input asp-for="InsuranceMonth" type="number" class="form-control" min="1" max="12" placeholder="6" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="InsuranceYear" class="form-label">السنة</label>
+                                <input asp-for="InsuranceYear" type="number" class="form-control" min="2024" max="2030" placeholder="2025" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- بطاقة PAM -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-check-circle"></i> معلومات PAM</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsRegisteredInPAM" class="form-check-input" type="checkbox" id="pamSwitch" />
+                                <label class="form-check-label fw-bold" for="pamSwitch">
+                                    مسجلة في نظام PAM
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="pamDetails" style="display: none;">
+                            <div class="mb-3">
+                                <label asp-for="PAMStatus" class="form-label">
+                                    <i class="fas fa-flag"></i> حالة PAM
+                                </label>
+                                <select asp-for="PAMStatus" class="form-select" asp-items="ViewBag.PAMStatuses">
+                                    <option value="">-- اختر الحالة --</option>
+                                </select>
+                                <span asp-validation-for="PAMStatus" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="PAMRegistrationDate" class="form-label">
+                                    <i class="fas fa-calendar"></i> تاريخ التسجيل في PAM
+                                </label>
+                                <input asp-for="PAMRegistrationDate" type="date" class="form-control" />
+                                <span asp-validation-for="PAMRegistrationDate" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- بطاقة الملاحظات -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-sticky-note"></i> ملاحظات</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <textarea asp-for="Notes" class="form-control" rows="4" placeholder="أي ملاحظات إضافية عن الشاحنة..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- أزرار الإجراءات -->
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save"></i> حفظ الشاحنة
+                    </button>
+                    <a href="/Trucks" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-times"></i> إلغاء
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        $(document).ready(function() {
+            // Toggle PAM details
+            $('#pamSwitch').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#pamDetails').slideDown();
+                } else {
+                    $('#pamDetails').slideUp();
+                }
+            });
+
+            // Initial check
+            if ($('#pamSwitch').is(':checked')) {
+                $('#pamDetails').show();
+            }
+
+            // Auto-fill insurance date from detailed inputs
+            $('#InsuranceDay, #InsuranceMonth, #InsuranceYear').on('change', function() {
+                var day = $('#InsuranceDay').val();
+                var month = $('#InsuranceMonth').val();
+                var year = $('#InsuranceYear').val();
+
+                if (day && month && year) {
+                    var dateStr = year + '-' + 
+                                  String(month).padStart(2, '0') + '-' + 
+                                  String(day).padStart(2, '0');
+                    $('#InsuranceExpiryDate').val(dateStr);
+                }
+            });
+        });
+    </script>
+}

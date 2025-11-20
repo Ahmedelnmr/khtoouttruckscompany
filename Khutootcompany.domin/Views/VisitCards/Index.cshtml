@@ -1,0 +1,407 @@
+﻿@model IEnumerable<Khutootcompany.Application.DTOs.VisitCardDto>
+
+@{
+    ViewData["Title"] = "كروت الزيارة";
+    var filterTitle = ViewBag.FilterTitle ?? "جميع كروت الزيارة";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-id-card"></i> كروت الزيارة
+            <span class="badge bg-primary">@Model.Count() كارت</span>
+        </h1>
+        <div>
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/VisitCards/Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> إضافة كارت جديد
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="card mb-4 shadow">
+        <div class="card-body">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-filter"></i> فلترة سريعة
+            </h5>
+            <div class="btn-group flex-wrap" role="group">
+                <a href="/VisitCards" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> الكل
+                </a>
+                <a href="/VisitCards?filter=expired" class="btn btn-outline-danger">
+                    <i class="fas fa-exclamation-triangle"></i> منتهية
+                </a>
+                <a href="/VisitCards?filter=expiring" class="btn btn-outline-warning">
+                    <i class="fas fa-clock"></i> تنتهي قريباً (30 يوم)
+                </a>
+                <a href="/VisitCards?filter=valid" class="btn btn-outline-success">
+                    <i class="fas fa-check-circle"></i> صالحة
+                </a>
+                <a href="/VisitCards?filter=unpaid" class="btn btn-outline-info">
+                    <i class="fas fa-money-bill-wave"></i> غير مدفوعة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-check-circle"></i> صالحة
+                    </h6>
+                    <h3 class="mb-0">
+                        @Model.Count(c => !c.IsExpired && !c.IsExpiringSoon)
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark shadow">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-clock"></i> تنتهي قريباً
+                    </h6>
+                    <h3 class="mb-0">
+                        @Model.Count(c => c.IsExpiringSoon)
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-exclamation-triangle"></i> منتهية
+                    </h6>
+                    <h3 class="mb-0">
+                        @Model.Count(c => c.IsExpired)
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-calculator"></i> الإجمالي المدفوع
+                    </h6>
+                    <h3 class="mb-0">
+                        @Model.Where(c => c.IsPaid).Sum(c => c.Price).ToString("N3") د.ك
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visit Cards Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> @filterTitle
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="visitCardsTable" class="table table-bordered table-hover" style="width:100%">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ت</th>
+                            <th>الموظف</th>
+                            <th>الشاحنة</th>
+                            <th>تاريخ الإصدار</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>المدة المتبقية</th>
+                            <th>الحالة</th>
+                            <th>السعر</th>
+                            <th>الدفع</th>
+                            <th>الوسيط</th>
+                            <th>رقم السند</th>
+                            <th>ملاحظات</th>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <th>إجراءات</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var card in Model.OrderByDescending(c => c.IssueDate))
+                        {
+                            var rowClass = "";
+                            if (card.IsExpired)
+                            {
+                                rowClass = "table-danger";
+                            }
+                            else if (card.IsExpiringSoon)
+                            {
+                                rowClass = "table-warning";
+                            }
+                            else if (card.IsWarning)
+                            {
+                                rowClass = "table-info";
+                            }
+
+                            var daysRemaining = (card.ExpiryDate - DateTime.Today).Days;
+
+                            <tr class="@rowClass">
+                                <td>@index</td>
+                                <td>
+                                    <a href="/Employees/Details/@card.EmployeeId" class="text-decoration-none">
+                                        <i class="fas fa-user"></i> @card.EmployeeName
+                                    </a>
+                                </td>
+                                <td>
+                                    @if (card.TruckId.HasValue)
+                                    {
+                                        <a href="/Trucks/Details/@card.TruckId" class="text-decoration-none">
+                                            <i class="fas fa-truck"></i> @card.TruckPlate
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>@card.IssueDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <strong class="@(card.IsExpired ? "text-danger" : card.IsExpiringSoon ? "text-warning" : "")">
+                                        @card.ExpiryDate.ToString("dd/MM/yyyy")
+                                    </strong>
+                                </td>
+                                <td class="text-center">
+                                    @if (card.IsExpired)
+                                    {
+                                        <span class="badge bg-danger">
+                                            منتهي منذ @Math.Abs(daysRemaining) يوم
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge @(daysRemaining <= 30 ? "bg-warning text-dark" : daysRemaining <= 60 ? "bg-info" : "bg-success")">
+                                            @daysRemaining يوم
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (card.IsExpired)
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle"></i> منتهي
+                                        </span>
+                                    }
+                                    else if (card.IsExpiringSoon)
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-exclamation-triangle"></i> ينتهي قريباً
+                                        </span>
+                                    }
+                                    else if (card.IsWarning)
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-info-circle"></i> تحذير
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> صالح
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <strong>@card.Price.ToString("N3") د.ك</strong>
+                                </td>
+                                <td class="text-center">
+                                    @if (card.IsPaid)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> مدفوع
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times"></i> غير مدفوع
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(card.IntermediaryName))
+                                    {
+                                        <div>
+                                            <small><i class="fas fa-user-tie"></i> @card.IntermediaryName</small>
+                                        </div>
+                                        if (!string.IsNullOrEmpty(card.IntermediaryPhone))
+                                        {
+                                            <div>
+                                                <small><i class="fas fa-phone"></i> @card.IntermediaryPhone</small>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(card.SondNumber))
+                                    {
+                                        <span class="badge bg-info">@card.SondNumber</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(card.Notes))
+                                    {
+                                        <small class="text-muted">@card.Notes</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <td>
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            <a href="/VisitCards/Details/@card.VisitCardId" class="btn btn-info btn-sm">
+                                                <i class="fas fa-eye"></i> تفاصيل
+                                            </a>
+                                            <a href="/VisitCards/Edit/@card.VisitCardId" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-edit"></i> تعديل
+                                            </a>
+                                            @if (card.IsExpired)
+                                            {
+                                                <a href="/VisitCards/Renew/@card.VisitCardId" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-redo"></i> تجديد
+                                                </a>
+                                            }
+                                            <button onclick="confirmDelete(@card.VisitCardId)" class="btn btn-danger btn-sm">
+                                                <i class="fas fa-trash"></i> حذف
+                                            </button>
+                                        </div>
+                                    </td>
+                                }
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="card mt-3 shadow">
+        <div class="card-body">
+            <h6 class="card-title">
+                <i class="fas fa-info-circle"></i> دليل الألوان:
+            </h6>
+            <div class="row">
+                <div class="col-md-3">
+                    <span class="badge bg-danger">أحمر</span> = منتهي (يجب التجديد فوراً)
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-warning text-dark">برتقالي</span> = ينتهي خلال 30 يوم
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-info">أزرق</span> = ينتهي خلال 60 يوم
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-success">أخضر</span> = صالح
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Important Notes -->
+    <div class="card mt-3 shadow border-warning">
+        <div class="card-body">
+            <h6 class="card-title text-warning">
+                <i class="fas fa-exclamation-triangle"></i> ملاحظات مهمة:
+            </h6>
+            <ul class="mb-0">
+                <li>سعر كارت الزيارة الواحد: <strong>15 د.ك</strong></li>
+                <li>مدة صلاحية الكارت: <strong>3 أشهر</strong> من تاريخ الإصدار</li>
+                <li>يجب تجديد الكروت المنتهية قبل استخدام الشاحنة</li>
+                <li>يُنصح بالتجديد قبل شهر من الانتهاء</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف هذا الكارت؟</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> 
+                    سيتم حذف السجل نهائياً ولا يمكن استرجاعه!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> تأكيد الحذف
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#visitCardsTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"
+                },
+                "pageLength": 25,
+                "order": [[3, "desc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": -1 }
+                ]
+            });
+        });
+
+        function confirmDelete(cardId) {
+            $('#deleteForm').attr('action', '/VisitCards/Delete/' + cardId);
+            $('#deleteModal').modal('show');
+        }
+    </script>
+}
+
+<style>
+    .table-danger {
+        background-color: #f8d7da !important;
+    }
+    .table-warning {
+        background-color: #fff3cd !important;
+    }
+    .table-info {
+        background-color: #cff4fc !important;
+    }
+</style>
