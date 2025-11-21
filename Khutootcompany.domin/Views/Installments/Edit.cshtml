@@ -1,0 +1,209 @@
+﻿@model Khutootcompany.Application.DTOs.InstallmentDto
+
+@{
+    ViewData["Title"] = "تعديل القسط";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-edit"></i> تعديل القسط
+        </h1>
+        <a href="/Installments/Details/@Model.InstallmentId" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع للتفاصيل
+        </a>
+    </div>
+
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>تنبيه:</strong> بعض البيانات لا يمكن تعديلها بعد إنشاء القسط (الشاحنة، السائق، الأسعار)
+    </div>
+
+    <form method="post" asp-action="Edit">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="InstallmentId" />
+        <input type="hidden" asp-for="TruckId" />
+        <input type="hidden" asp-for="EmployeeId" />
+        <input type="hidden" asp-for="TotalPriceOffice" />
+        <input type="hidden" asp-for="TotalPriceSayer" />
+        <input type="hidden" asp-for="StartDate" />
+        <input type="hidden" asp-for="TotalMonths" />
+        <input type="hidden" asp-for="PaidAmount" />
+        <input type="hidden" asp-for="RemainingAmount" />
+        <input type="hidden" asp-for="IsCompleted" />
+
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+        <div class="row">
+            <!-- Main Info Card -->
+            <div class="col-md-8">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle"></i> المعلومات الأساسية (للعرض فقط)
+                        </h5>
+                    </div>
+                    <div class="card-body bg-light">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">الشاحنة</label>
+                                <input type="text" class="form-control" value="@Model.TruckPlate" disabled />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">السائق</label>
+                                <input type="text" class="form-control" value="@Model.EmployeeName" disabled />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">سعر المكتب</label>
+                                <input type="text" class="form-control" value="@Model.TotalPriceOffice.ToString("N3") د.ك" disabled />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">سعر الساير</label>
+                                <input type="text" class="form-control" value="@Model.TotalPriceSayer.ToString("N3") د.ك" disabled />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">الربح</label>
+                                <input type="text" class="form-control text-success fw-bold" value="@Model.ProfitMargin.ToString("N3") د.ك" disabled />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editable Fields Card -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-edit"></i> البيانات القابلة للتعديل
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-calendar-check"></i> القسط الشهري (د.ك) *
+                            </label>
+                            <input asp-for="MonthlyQest" type="number" step="0.001" class="form-control" required />
+                            <span asp-validation-for="MonthlyQest" class="text-danger"></span>
+                            <small class="text-muted">
+                                القسط الحالي: @Model.MonthlyQest.ToString("N3") د.ك
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-university"></i> مصدر التمويل
+                            </label>
+                            <select asp-for="FinanceSource" class="form-select">
+                                <option value="">-- اختر المصدر --</option>
+                                <option value="الساير">الساير</option>
+                                <option value="أنوار السالمي">أنوار السالمي</option>
+                                <option value="السلام">السلام</option>
+                                <option value="مباشر">مباشر</option>
+                                <option value="البنك الأهلي">البنك الأهلي</option>
+                                <option value="بنك الكويت الوطني">بنك الكويت الوطني</option>
+                                <option value="أخرى">أخرى</option>
+                            </select>
+                            <span asp-validation-for="FinanceSource" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-receipt"></i> رقم معاملة الساير
+                            </label>
+                            <input asp-for="SayerTransactionNumber" class="form-control" maxlength="50" />
+                            <span asp-validation-for="SayerTransactionNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sticky-note"></i> ملاحظات
+                            </label>
+                            <textarea asp-for="Notes" class="form-control" rows="4" 
+                                      placeholder="أي ملاحظات إضافية..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="col-md-4">
+                <div class="card shadow mb-4 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie"></i> ملخص القسط
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>تاريخ البداية:</span>
+                                <strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>المدة:</span>
+                                <strong>@Model.TotalMonths شهر</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>المدفوع:</span>
+                                <strong class="text-success">@Model.PaidAmount.ToString("N3") د.ك</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>المتبقي:</span>
+                                <strong class="text-danger">@Model.RemainingAmount.ToString("N3") د.ك</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>نسبة الإنجاز:</span>
+                                <strong class="text-primary">@Model.ProgressPercentage.ToString("N0")%</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>عدد الدفعات:</span>
+                                <strong>@Model.Payments.Count</strong>
+                            </li>
+                        </ul>
+
+                        <div class="progress mt-3" style="height: 20px;">
+                            <div class="progress-bar @(Model.IsCompleted ? "bg-success" : Model.IsOverdue ? "bg-danger" : "bg-primary")" 
+                                 style="width: @Model.ProgressPercentage%">
+                                @Model.ProgressPercentage.ToString("N0")%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-info-circle"></i> معلومات هامة:
+                    </h6>
+                    <ul class="small mb-0">
+                        <li>لا يمكن تعديل المبالغ المدفوعة من هنا</li>
+                        <li>لتسجيل دفعة جديدة، ارجع للتفاصيل</li>
+                        <li>التعديلات ستُسجل في سجل التغييرات</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save"></i> حفظ التعديلات
+                    </button>
+                    <div>
+                        <a href="/Installments/Details/@Model.InstallmentId" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-times"></i> إلغاء
+                        </a>
+                        <a href="/Installments" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-list"></i> القائمة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

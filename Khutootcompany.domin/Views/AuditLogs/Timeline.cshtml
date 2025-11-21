@@ -1,0 +1,403 @@
+﻿@model IEnumerable<Khutootcompany.Application.Interfaces.AuditLogDto>
+
+@{
+    ViewData["Title"] = "الخط الزمني";
+    var targetDate = ViewBag.TargetDate as DateTime? ?? DateTime.Today;
+    var hourlyActivity = ViewBag.HourlyActivity as IEnumerable<dynamic>;
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-clock"></i> الخط الزمني للعمليات
+        </h1>
+        <div>
+            <a href="/AuditLogs" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للسجل
+            </a>
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print"></i> طباعة
+            </button>
+        </div>
+    </div>
+
+    <!-- Date Selector -->
+    <div class="card shadow mb-4 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-calendar-alt"></i> اختيار التاريخ
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Timeline" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">التاريخ</label>
+                    <input type="date" name="date" class="form-control form-control-lg" 
+                           value="@targetDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">
+                        <i class="fas fa-search"></i> عرض
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a href="/AuditLogs/Timeline?date=@DateTime.Today.ToString("yyyy-MM-dd")" 
+                       class="btn btn-success w-100 btn-lg">
+                        <i class="fas fa-calendar-day"></i> اليوم
+                    </a>
+                </div>
+                <div class="col-md-2">
+                    <a href="/AuditLogs/Timeline?date=@DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd")" 
+                       class="btn btn-info w-100 btn-lg">
+                        <i class="fas fa-calendar-minus"></i> أمس
+                    </a>
+                </div>
+                <div class="col-md-2">
+                    <a href="/AuditLogs/Timeline?date=@DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd")" 
+                       class="btn btn-warning w-100 btn-lg">
+                        <i class="fas fa-calendar-week"></i> قبل أسبوع
+                    </a>
+                </div>
+            </form>
+
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="fas fa-info-circle"></i>
+                <strong>التاريخ المحدد:</strong> 
+                @targetDate.ToString("dddd، d MMMM yyyy", new System.Globalization.CultureInfo("ar-EG"))
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        @{
+            var totalOps = Model.Count();
+            var addedCount = Model.Count(l => l.Action == "Added");
+            var modifiedCount = Model.Count(l => l.Action == "Modified");
+            var deletedCount = Model.Count(l => l.Action == "Deleted");
+            var uniqueUsers = Model.Select(l => l.PerformedBy).Distinct().Count();
+        }
+
+        <div class="col-md-2">
+            <div class="card shadow text-center bg-primary text-white">
+                <div class="card-body">
+                    <i class="fas fa-list fa-2x mb-2"></i>
+                    <h6 class="small">إجمالي العمليات</h6>
+                    <h2>@totalOps</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card shadow text-center bg-success text-white">
+                <div class="card-body">
+                    <i class="fas fa-plus-circle fa-2x mb-2"></i>
+                    <h6 class="small">إضافات</h6>
+                    <h2>@addedCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card shadow text-center bg-warning text-dark">
+                <div class="card-body">
+                    <i class="fas fa-edit fa-2x mb-2"></i>
+                    <h6 class="small">تعديلات</h6>
+                    <h2>@modifiedCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card shadow text-center bg-danger text-white">
+                <div class="card-body">
+                    <i class="fas fa-trash fa-2x mb-2"></i>
+                    <h6 class="small">حذف</h6>
+                    <h2>@deletedCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card shadow text-center bg-info text-white">
+                <div class="card-body">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h6 class="small">مستخدمين</h6>
+                    <h2>@uniqueUsers</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card shadow text-center bg-dark text-white">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                    <h6 class="small">متوسط/ساعة</h6>
+                    <h2>@(totalOps / 24)</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hourly Activity Chart -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-chart-bar"></i> النشاط حسب الساعة
+            </h5>
+        </div>
+        <div class="card-body">
+            <canvas id="hourlyChart" height="80"></canvas>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-stream"></i> الخط الزمني التفصيلي
+                <span class="badge bg-light text-dark">@totalOps عملية</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="timeline">
+                    @{
+                        var groupedByHour = Model.GroupBy(l => l.PerformedAt.Hour).OrderBy(g => g.Key);
+                    }
+
+                    @foreach (var hourGroup in groupedByHour)
+                    {
+                        var hour = hourGroup.Key;
+                        var hourOps = hourGroup.ToList();
+                        var hourText = hour == 0 ? "12 صباحاً" : 
+                                      hour < 12 ? $"{hour} صباحاً" : 
+                                      hour == 12 ? "12 ظهراً" : 
+                                      $"{hour - 12} مساءً";
+
+                        <div class="hour-section mb-5">
+                            <div class="hour-header mb-3 p-3 bg-primary text-white rounded">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-clock"></i> @hourText
+                                    <span class="badge bg-light text-dark float-end">@hourOps.Count عملية</span>
+                                </h4>
+                            </div>
+
+                            @foreach (var log in hourOps.OrderBy(l => l.PerformedAt))
+                            {
+                                var actionColor = log.Action switch {
+                                    "Added" => "success",
+                                    "Modified" => "warning",
+                                    "Deleted" => "danger",
+                                    _ => "secondary"
+                                };
+
+                                var actionIcon = log.Action switch {
+                                    "Added" => "fa-plus-circle",
+                                    "Modified" => "fa-edit",
+                                    "Deleted" => "fa-trash-alt",
+                                    _ => "fa-question-circle"
+                                };
+
+                                <div class="timeline-item mb-3">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <div class="bg-@actionColor text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="fas @actionIcon fa-lg"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3 border-start border-3 border-@actionColor ps-3 pb-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">
+                                                        <span class="badge bg-@actionColor">@log.Action</span>
+                                                        <strong class="ms-2">@log.EntityName</strong>
+                                                        <code class="ms-2">#@log.EntityId</code>
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <i class="fas fa-user text-primary"></i>
+                                                        <a href="/AuditLogs/ByUser?username=@log.PerformedBy" class="text-decoration-none">
+                                                            @log.PerformedBy
+                                                        </a>
+                                                    </p>
+                                                    @if (!string.IsNullOrEmpty(log.OldValues) || !string.IsNullOrEmpty(log.NewValues))
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#logModal-@log.AuditLogId">
+                                                            <i class="fas fa-eye"></i> التفاصيل
+                                                        </button>
+                                                    }
+                                                </div>
+                                                <div class="text-end">
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-clock"></i>
+                                                        @log.PerformedAt.ToString("HH:mm:ss")
+                                                    </small>
+                                                    <small class="text-muted">
+                                                        منذ @{
+                                                            var minutesAgo = (DateTime.Now - log.PerformedAt).TotalMinutes;
+                                                            if (minutesAgo < 60)
+                                                            {
+                                                                <text>@((int)minutesAgo) دقيقة</text>
+                                                            }
+                                                            else if (minutesAgo < 1440)
+                                                            {
+                                                                <text>@((int)(minutesAgo / 60)) ساعة</text>
+                                                            }
+                                                            else
+                                                            {
+                                                                <text>@((int)(minutesAgo / 1440)) يوم</text>
+                                                            }
+                                                        }
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Log Details Modal -->
+                                <div class="modal fade" id="logModal-@log.AuditLogId" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-@actionColor text-white">
+                                                <h5 class="modal-title">
+                                                    <i class="fas @actionIcon"></i> تفاصيل العملية
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <strong>الكيان:</strong> @log.EntityName #@log.EntityId
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <strong>المستخدم:</strong> @log.PerformedBy
+                                                    </div>
+                                                </div>
+
+                                                @if (!string.IsNullOrEmpty(log.OldValues))
+                                                {
+                                                    <div class="mb-3">
+                                                        <h6 class="text-danger">
+                                                            <i class="fas fa-arrow-circle-left"></i> القيم القديمة
+                                                        </h6>
+                                                        <pre class="bg-light p-3 rounded"><code>@log.OldValues</code></pre>
+                                                    </div>
+                                                }
+
+                                                @if (!string.IsNullOrEmpty(log.NewValues))
+                                                {
+                                                    <div>
+                                                        <h6 class="text-success">
+                                                            <i class="fas fa-arrow-circle-right"></i> القيم الجديدة
+                                                        </h6>
+                                                        <pre class="bg-light p-3 rounded"><code>@log.NewValues</code></pre>
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="modal-footer">
+                                                <a href="/AuditLogs/Details/@log.AuditLogId" class="btn btn-info">
+                                                    <i class="fas fa-info-circle"></i> التفاصيل الكاملة
+                                                </a>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    <i class="fas fa-times"></i> إغلاق
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center py-5">
+                    <i class="fas fa-info-circle fa-5x mb-3"></i>
+                    <h4>لا توجد عمليات في هذا اليوم</h4>
+                    <p class="text-muted">جرب اختيار تاريخ آخر</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Hourly Activity Chart
+        const ctx = document.getElementById('hourlyChart');
+        
+        // Create 24-hour array
+        const hours = Array.from({length: 24}, (_, i) => i);
+        const hourLabels = hours.map(h => {
+            if (h === 0) return '12 ص';
+            if (h < 12) return h + ' ص';
+            if (h === 12) return '12 م';
+            return (h - 12) + ' م';
+        });
+
+        // Get activity data
+        const activityData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            Enumerable.Range(0, 24).Select(h => new { 
+                Hour = h, 
+                Count = Model.Count(l => l.PerformedAt.Hour == h) 
+            })
+        ));
+
+        const activityCounts = activityData.map(d => d.Count);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: hourLabels,
+                datasets: [{
+                    label: 'عدد العمليات',
+                    data: activityCounts,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => 'الساعة: ' + items[0].label,
+                            label: (item) => 'العمليات: ' + item.parsed.y
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <style>
+        .timeline-item {
+            position: relative;
+        }
+        
+        .hour-section {
+            page-break-inside: avoid;
+        }
+
+        @@media print {
+            .btn, .modal { display: none !important; }
+            .card-header {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+}

@@ -1,0 +1,390 @@
+﻿@model dynamic
+
+@{
+    ViewData["Title"] = "نشاط المستخدمين";
+    var users = Model as IEnumerable<dynamic>;
+    var totalUsers = users.Count();
+    var totalActions = users.Sum(u => (int)u.TotalActions);
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-users"></i> نشاط المستخدمين
+            <span class="badge bg-primary">@totalUsers مستخدم</span>
+        </h1>
+        <div>
+            <a href="/AuditLogs" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للسجل
+            </a>
+            <a href="/AuditLogs/Report" class="btn btn-info">
+                <i class="fas fa-chart-bar"></i> التقرير
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow text-center bg-primary text-white">
+                <div class="card-body">
+                    <i class="fas fa-users fa-3x mb-3"></i>
+                    <h6>إجمالي المستخدمين</h6>
+                    <h2>@totalUsers</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center bg-success text-white">
+                <div class="card-body">
+                    <i class="fas fa-tasks fa-3x mb-3"></i>
+                    <h6>إجمالي العمليات</h6>
+                    <h2>@totalActions</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center bg-info text-white">
+                <div class="card-body">
+                    <i class="fas fa-calculator fa-3x mb-3"></i>
+                    <h6>متوسط العمليات</h6>
+                    <h2>@(totalUsers > 0 ? (totalActions / totalUsers) : 0)</h2>
+                    <small>لكل مستخدم</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center bg-warning text-dark">
+                <div class="card-body">
+                    <i class="fas fa-star fa-3x mb-3"></i>
+                    <h6>الأكثر نشاطاً</h6>
+                    <h3 class="mb-0">
+                        @if (users.Any())
+                        {
+                            var mostActive = users.OrderByDescending(u => (int)u.TotalActions).First();
+                            @mostActive.Username
+                        }
+                        else
+                        {
+                            <text>-</text>
+                        }
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Card -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> توزيع العمليات حسب المستخدم
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userActivityChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> تفاصيل نشاط المستخدمين
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (users.Any())
+            {
+                <div class="table-responsive">
+                    <table id="usersTable" class="table table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ت</th>
+                                <th>المستخدم</th>
+                                <th>إجمالي العمليات</th>
+                                <th>إضافات</th>
+                                <th>تعديلات</th>
+                                <th>حذف</th>
+                                <th>آخر نشاط</th>
+                                <th>النسبة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int index = 1;
+                            }
+                            @foreach (var user in users)
+                            {
+                                var percentage = totalActions > 0 ? ((int)user.TotalActions * 100.0 / totalActions) : 0;
+                                var lastActivity = (DateTime)user.LastActivity;
+                                var daysSinceActivity = (DateTime.Now - lastActivity).Days;
+                                var activityClass = daysSinceActivity <= 7 ? "success" : daysSinceActivity <= 30 ? "warning" : "secondary";
+
+                                <tr>
+                                    <td>@index</td>
+                                    <td>
+                                        <i class="fas fa-user text-primary"></i>
+                                        <strong>@user.Username</strong>
+                                        @if (index == 1)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-2">
+                                                <i class="fas fa-crown"></i> الأعلى
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong class="text-primary">@user.TotalActions</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-plus-circle"></i> @user.AddedCount
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-edit"></i> @user.ModifiedCount
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-trash-alt"></i> @user.DeletedCount
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <i class="fas fa-calendar text-@activityClass"></i>
+                                            @lastActivity.ToString("dd/MM/yyyy")
+                                            <br/>
+                                            <span class="text-muted">
+                                                @if (daysSinceActivity == 0)
+                                                {
+                                                    <text>اليوم</text>
+                                                }
+                                                else if (daysSinceActivity == 1)
+                                                {
+                                                    <text>أمس</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>منذ @daysSinceActivity يوم</text>
+                                                }
+                                            </span>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="min-width: 100px; height: 25px;">
+                                            <div class="progress-bar bg-primary" 
+                                                 style="width: @percentage%"
+                                                 role="progressbar">
+                                                @percentage.ToString("N1")%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            <a href="/AuditLogs/ByUser?username=@user.Username" class="btn btn-info">
+                                                <i class="fas fa-list"></i> السجل
+                                            </a>
+                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userModal-@index">
+                                                <i class="fas fa-chart-pie"></i> التفاصيل
+                                            </button>
+                                        </div>
+
+                                        <!-- User Details Modal -->
+                                        <div class="modal fade" id="userModal-@index" tabindex="-1">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-primary text-white">
+                                                        <h5 class="modal-title">
+                                                            <i class="fas fa-user"></i> تفاصيل نشاط @user.Username
+                                                        </h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row mb-3">
+                                                            <div class="col-md-6">
+                                                                <h6 class="text-muted">المستخدم</h6>
+                                                                <h4>@user.Username</h4>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <h6 class="text-muted">آخر نشاط</h6>
+                                                                <h4>@lastActivity.ToString("dd/MM/yyyy HH:mm")</h4>
+                                                            </div>
+                                                        </div>
+
+                                                        <hr>
+
+                                                        <div class="row text-center">
+                                                            <div class="col-md-3">
+                                                                <div class="border rounded p-3 bg-primary-subtle">
+                                                                    <h6 class="text-muted small">الإجمالي</h6>
+                                                                    <h2 class="text-primary mb-0">@user.TotalActions</h2>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="border rounded p-3 bg-success-subtle">
+                                                                    <h6 class="text-muted small">إضافات</h6>
+                                                                    <h2 class="text-success mb-0">@user.AddedCount</h2>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="border rounded p-3 bg-warning-subtle">
+                                                                    <h6 class="text-muted small">تعديلات</h6>
+                                                                    <h2 class="text-warning mb-0">@user.ModifiedCount</h2>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="border rounded p-3 bg-danger-subtle">
+                                                                    <h6 class="text-muted small">حذف</h6>
+                                                                    <h2 class="text-danger mb-0">@user.DeletedCount</h2>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <hr>
+
+                                                        <div class="text-center">
+                                                            <canvas id="userPieChart-@index" height="200"></canvas>
+                                                        </div>
+
+                                                        <hr>
+
+                                                        <div class="alert alert-info">
+                                                            <h6><i class="fas fa-info-circle"></i> إحصائيات</h6>
+                                                            <ul class="mb-0">
+                                                                <li>النسبة من الإجمالي: <strong>@percentage.ToString("N1")%</strong></li>
+                                                                <li>الترتيب: <strong>#@index</strong> من أصل @totalUsers</li>
+                                                                <li>متوسط العمليات اليومية: <strong>@((int)user.TotalActions / Math.Max(1, daysSinceActivity + 1))</strong></li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <a href="/AuditLogs/ByUser?username=@user.Username" class="btn btn-primary">
+                                                            <i class="fas fa-list"></i> عرض السجل الكامل
+                                                        </a>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                            <i class="fas fa-times"></i> إغلاق
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                index++;
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="2" class="text-end">الإجمالي:</th>
+                                <th>@totalActions</th>
+                                <th>@users.Sum(u => (int)u.AddedCount)</th>
+                                <th>@users.Sum(u => (int)u.ModifiedCount)</th>
+                                <th>@users.Sum(u => (int)u.DeletedCount)</th>
+                                <th colspan="3"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h5>لا يوجد نشاط للمستخدمين</h5>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#usersTable').DataTable({
+                "language": {"url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"},
+                "pageLength": 25,
+                "order": [[2, "desc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": -1 }
+                ]
+            });
+
+            // Main Activity Chart
+            const ctx = document.getElementById('userActivityChart');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", users.Select(u => $"'{u.Username}'")))],
+                    datasets: [
+                        {
+                            label: 'إضافات',
+                            data: [@string.Join(",", users.Select(u => u.AddedCount))],
+                            backgroundColor: '#28a745'
+                        },
+                        {
+                            label: 'تعديلات',
+                            data: [@string.Join(",", users.Select(u => u.ModifiedCount))],
+                            backgroundColor: '#ffc107'
+                        },
+                        {
+                            label: 'حذف',
+                            data: [@string.Join(",", users.Select(u => u.DeletedCount))],
+                            backgroundColor: '#dc3545'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        x: { stacked: true },
+                        y: { 
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Individual user pie charts
+            @{
+                int chartIndex = 1;
+            }
+            @foreach (var user in users)
+            {
+                <text>
+                const ctx@(chartIndex) = document.getElementById('userPieChart-@chartIndex');
+                if (ctx@(chartIndex)) {
+                    new Chart(ctx@(chartIndex), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['إضافات', 'تعديلات', 'حذف'],
+                            datasets: [{
+                                data: [@user.AddedCount, @user.ModifiedCount, @user.DeletedCount],
+                                backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                }
+                </text>
+                chartIndex++;
+            }
+        });
+    </script>
+}

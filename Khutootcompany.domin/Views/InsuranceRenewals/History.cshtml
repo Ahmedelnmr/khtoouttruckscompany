@@ -1,0 +1,236 @@
+﻿@model IEnumerable<Khutootcompany.Application.DTOs.InsuranceRenewalDto>
+
+@{
+    ViewData["Title"] = "سجل تجديد التأمينات";
+    var totalCost = Model.Sum(r => r.Cost);
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-history"></i> سجل تجديد التأمينات
+            <span class="badge bg-primary">@Model.Count() عملية</span>
+        </h1>
+        <div>
+            <a href="/InsuranceRenewals" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للرئيسية
+            </a>
+            <a href="/InsuranceRenewals/Report" class="btn btn-info">
+                <i class="fas fa-file-pdf"></i> تقرير مفصل
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow text-center">
+                <div class="card-body">
+                    <i class="fas fa-sync-alt fa-3x text-primary mb-3"></i>
+                    <h6 class="text-muted">إجمالي التجديدات</h6>
+                    <h2 class="text-primary">@Model.Count()</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center">
+                <div class="card-body">
+                    <i class="fas fa-money-bill-wave fa-3x text-success mb-3"></i>
+                    <h6 class="text-muted">إجمالي التكلفة</h6>
+                    <h2 class="text-success">@totalCost.ToString("N3")</h2>
+                    <small class="text-muted">دينار كويتي</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center">
+                <div class="card-body">
+                    <i class="fas fa-calculator fa-3x text-info mb-3"></i>
+                    <h6 class="text-muted">متوسط التكلفة</h6>
+                    <h2 class="text-info">
+                        @if (Model.Any())
+                        {
+                            (totalCost / Model.Count()).ToString("N3");
+                        }
+                        else
+                        {
+                            @:0.000
+                        }
+                    </h2>
+                    <small class="text-muted">دينار كويتي</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center">
+                <div class="card-body">
+                    <i class="fas fa-truck fa-3x text-warning mb-3"></i>
+                    <h6 class="text-muted">عدد الشاحنات</h6>
+                    <h2 class="text-warning">@Model.Select(r => r.TruckId).Distinct().Count()</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-filter"></i> فلترة السجل
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="/InsuranceRenewals/Report" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">من تاريخ</label>
+                    <input type="date" name="startDate" class="form-control" 
+                           value="@DateTime.Today.AddMonths(-6).ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">إلى تاريخ</label>
+                    <input type="date" name="endDate" class="form-control" 
+                           value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> عرض التقرير
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Renewals Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> سجل التجديدات
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table id="renewalsTable" class="table table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ت</th>
+                                <th>الشاحنة</th>
+                                <th>تاريخ التجديد</th>
+                                <th>تاريخ الانتهاء</th>
+                                <th>المدة</th>
+                                <th>التكلفة</th>
+                                <th>رقم السند</th>
+                                <th>المستخدم</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int index = 1;
+                            }
+                            @foreach (var renewal in Model)
+                            {
+                                var duration = (renewal.ExpiryDate - renewal.RenewalDate).Days;
+                                var isExpired = renewal.ExpiryDate < DateTime.Today;
+                                var rowClass = isExpired ? "table-danger" : "";
+
+                                <tr class="@rowClass">
+                                    <td>@index</td>
+                                    <td>
+                                        <a href="/Trucks/Details/@renewal.TruckId" class="fw-bold text-decoration-none">
+                                            <i class="fas fa-truck"></i> @renewal.TruckPlate
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-calendar-check text-success"></i>
+                                        @renewal.RenewalDate.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-calendar-times @(isExpired ? "text-danger" : "text-info")"></i>
+                                        @renewal.ExpiryDate.ToString("dd/MM/yyyy")
+                                        @if (isExpired)
+                                        {
+                                            <span class="badge bg-danger">منتهي</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (duration >= 365)
+                                        {
+                                            <span class="badge bg-success">@Math.Round(duration / 365.0, 1) سنة</span>
+                                        }
+                                        else if (duration >= 30)
+                                        {
+                                            <span class="badge bg-info">@Math.Round(duration / 30.0, 1) شهر</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">@duration يوم</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong class="text-success">@renewal.Cost.ToString("N3") د.ك</strong>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(renewal.SondNumber))
+                                        {
+                                            <code>@renewal.SondNumber</code>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <i class="fas fa-user text-primary"></i>
+                                            @renewal.CreatedBy
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <a href="/InsuranceRenewals/ByTruck/@renewal.TruckId" class="btn btn-sm btn-info">
+                                            <i class="fas fa-list"></i> السجل
+                                        </a>
+                                    </td>
+                                </tr>
+                                index++;
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="5" class="text-end">الإجمالي:</th>
+                                <th><strong class="text-success">@totalCost.ToString("N3") د.ك</strong></th>
+                                <th colspan="3"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h5>لا توجد عمليات تجديد مسجلة</h5>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#renewalsTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"
+                },
+                "pageLength": 25,
+                "order": [[2, "desc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": -1 }
+                ]
+            });
+        });
+    </script>
+}

@@ -1,0 +1,391 @@
+﻿@model Khutootcompany.Application.Interfaces.AuditLogDto
+
+@{
+    ViewData["Title"] = "تفاصيل العملية";
+    var actionColor = Model.Action switch {
+        "Added" => "success",
+        "Modified" => "warning",
+        "Deleted" => "danger",
+        _ => "secondary"
+    };
+    
+    var actionIcon = Model.Action switch {
+        "Added" => "fa-plus-circle",
+        "Modified" => "fa-edit",
+        "Deleted" => "fa-trash-alt",
+        _ => "fa-question-circle"
+    };
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-info-circle"></i> تفاصيل العملية
+            <span class="badge bg-@actionColor">
+                <i class="fas @actionIcon"></i> @Model.Action
+            </span>
+        </h1>
+        <div>
+            <a href="/AuditLogs" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للسجل
+            </a>
+            <a href="/AuditLogs/ByEntity?entityName=@Model.EntityName&entityId=@Model.EntityId" class="btn btn-info">
+                <i class="fas fa-history"></i> سجل هذا الكيان
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Info Card -->
+        <div class="col-md-8">
+            <div class="card shadow mb-4 border-@actionColor">
+                <div class="card-header bg-@actionColor text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info"></i> معلومات العملية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-database"></i> نوع الكيان
+                            </h6>
+                            <h4 class="text-dark">@Model.EntityName</h4>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-hashtag"></i> رقم الكيان
+                            </h6>
+                            <h4 class="text-primary">
+                                <a href="/AuditLogs/ByEntity?entityName=@Model.EntityName&entityId=@Model.EntityId" 
+                                   class="text-decoration-none">
+                                    #@Model.EntityId
+                                </a>
+                            </h4>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-user-tie"></i> المستخدم
+                            </h6>
+                            <h4>
+                                <a href="/AuditLogs/ByUser?username=@Model.PerformedBy" 
+                                   class="badge bg-primary text-decoration-none" style="font-size: 1rem;">
+                                    @Model.PerformedBy
+                                </a>
+                            </h4>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-calendar-alt"></i> التاريخ والوقت
+                            </h6>
+                            <h4 class="text-dark">
+                                @Model.PerformedAt.ToString("dd/MM/yyyy")
+                                <small class="text-muted">@Model.PerformedAt.ToString("HH:mm:ss")</small>
+                            </h4>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-@actionColor">
+                        <h5 class="alert-heading">
+                            <i class="fas @actionIcon"></i> نوع العملية
+                        </h5>
+                        <hr>
+                        <p class="mb-0 h5">
+                            @if (Model.Action == "Added")
+                            {
+                                <text>تم إضافة سجل جديد</text>
+                            }
+                            else if (Model.Action == "Modified")
+                            {
+                                <text>تم تعديل السجل</text>
+                            }
+                            else if (Model.Action == "Deleted")
+                            {
+                                <text>تم حذف السجل</text>
+                            }
+                            else
+                            {
+                                @Model.Action
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Old Values Card -->
+            @if (!string.IsNullOrEmpty(Model.OldValues))
+            {
+                <div class="card shadow mb-4 border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-arrow-circle-left"></i> القيم القديمة
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bg-light p-3 rounded">
+                            <pre class="mb-0" style="white-space: pre-wrap; word-wrap: break-word;"><code id="oldValuesCode">@Model.OldValues</code></pre>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyToClipboard('oldValuesCode')">
+                            <i class="fas fa-copy"></i> نسخ
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="formatJson('oldValuesCode')">
+                            <i class="fas fa-code"></i> تنسيق JSON
+                        </button>
+                    </div>
+                </div>
+            }
+
+            <!-- New Values Card -->
+            @if (!string.IsNullOrEmpty(Model.NewValues))
+            {
+                <div class="card shadow mb-4 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-arrow-circle-right"></i> القيم الجديدة
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bg-light p-3 rounded">
+                            <pre class="mb-0" style="white-space: pre-wrap; word-wrap: break-word;"><code id="newValuesCode">@Model.NewValues</code></pre>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyToClipboard('newValuesCode')">
+                            <i class="fas fa-copy"></i> نسخ
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="formatJson('newValuesCode')">
+                            <i class="fas fa-code"></i> تنسيق JSON
+                        </button>
+                    </div>
+                </div>
+            }
+
+            <!-- Comparison Card -->
+            @if (!string.IsNullOrEmpty(Model.OldValues) && !string.IsNullOrEmpty(Model.NewValues))
+            {
+                <div class="card shadow mb-4 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exchange-alt"></i> المقارنة
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-danger">
+                                    <i class="fas fa-minus-circle"></i> القديم
+                                </h6>
+                                <div id="oldComparison" class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+                                    <!-- Will be filled by JavaScript -->
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-success">
+                                    <i class="fas fa-plus-circle"></i> الجديد
+                                </h6>
+                                <div id="newComparison" class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+                                    <!-- Will be filled by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Side Panel -->
+        <div class="col-md-4">
+            <!-- Quick Info Card -->
+            <div class="card shadow mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i> معلومات سريعة
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span><i class="fas fa-key text-primary"></i> معرف السجل:</span>
+                            <strong>@Model.AuditLogId</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span><i class="fas fa-calendar text-info"></i> اليوم:</span>
+                            <strong>@Model.PerformedAt.ToString("dddd")</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span><i class="fas fa-clock text-warning"></i> الساعة:</span>
+                            <strong>@Model.PerformedAt.ToString("hh:mm tt")</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span><i class="fas fa-history text-secondary"></i> منذ:</span>
+                            <strong>
+                                @{
+                                    var timeAgo = DateTime.Now - Model.PerformedAt;
+                                    if (timeAgo.TotalMinutes < 60)
+                                    {
+                                        <text>@((int)timeAgo.TotalMinutes) دقيقة</text>
+                                    }
+                                    else if (timeAgo.TotalHours < 24)
+                                    {
+                                        <text>@((int)timeAgo.TotalHours) ساعة</text>
+                                    }
+                                    else
+                                    {
+                                        <text>@((int)timeAgo.TotalDays) يوم</text>
+                                    }
+                                }
+                            </strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="card shadow mb-4 border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tools"></i> إجراءات سريعة
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/AuditLogs/ByEntity?entityName=@Model.EntityName&entityId=@Model.EntityId" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> كل سجلات هذا الكيان
+                        </a>
+                        <a href="/AuditLogs/ByUser?username=@Model.PerformedBy" 
+                           class="btn btn-outline-info">
+                            <i class="fas fa-user"></i> كل عمليات @Model.PerformedBy
+                        </a>
+                        @{
+                            var sameDate = Model.PerformedAt.Date;
+                        }
+                        <a href="/AuditLogs/Timeline?date=@sameDate.ToString("yyyy-MM-dd")" 
+                           class="btn btn-outline-warning">
+                            <i class="fas fa-calendar-day"></i> عمليات نفس اليوم
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="window.print()">
+                            <i class="fas fa-print"></i> طباعة
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Card -->
+            <div class="card shadow border-dark">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-compass"></i> التنقل
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/AuditLogs" class="btn btn-outline-dark">
+                            <i class="fas fa-list"></i> السجل الكامل
+                        </a>
+                        <a href="/AuditLogs/Report" class="btn btn-outline-success">
+                            <i class="fas fa-chart-bar"></i> التقارير
+                        </a>
+                        <a href="/AuditLogs/UserActivity" class="btn btn-outline-info">
+                            <i class="fas fa-users"></i> نشاط المستخدمين
+                        </a>
+                        <a href="/AuditLogs/EntityTypes" class="btn btn-outline-warning">
+                            <i class="fas fa-database"></i> أنواع الكيانات
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert('تم النسخ بنجاح!');
+            }).catch(err => {
+                console.error('فشل النسخ:', err);
+            });
+        }
+
+        function formatJson(elementId) {
+            const element = document.getElementById(elementId);
+            try {
+                const json = JSON.parse(element.textContent);
+                element.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                alert('البيانات ليست بصيغة JSON صالحة');
+            }
+        }
+
+        // Auto-format JSON on load
+        window.addEventListener('load', function() {
+            formatJson('oldValuesCode');
+            formatJson('newValuesCode');
+            
+            // Create comparison view
+            compareValues();
+        });
+
+        function compareValues() {
+            try {
+                const oldValues = JSON.parse('@Html.Raw(Model.OldValues?.Replace("\"", "\\\""))');
+                const newValues = JSON.parse('@Html.Raw(Model.NewValues?.Replace("\"", "\\\""))');
+                
+                const oldDiv = document.getElementById('oldComparison');
+                const newDiv = document.getElementById('newComparison');
+                
+                if (oldDiv && newDiv) {
+                    let oldHtml = '<table class="table table-sm">';
+                    let newHtml = '<table class="table table-sm">';
+                    
+                    const allKeys = new Set([...Object.keys(oldValues || {}), ...Object.keys(newValues || {})]);
+                    
+                    allKeys.forEach(key => {
+                        const oldVal = oldValues?.[key];
+                        const newVal = newValues?.[key];
+                        const changed = oldVal !== newVal;
+                        
+                        oldHtml += `<tr class="${changed ? 'table-danger' : ''}">
+                            <td><strong>${key}:</strong></td>
+                            <td>${oldVal ?? '-'}</td>
+                        </tr>`;
+                        
+                        newHtml += `<tr class="${changed ? 'table-success' : ''}">
+                            <td><strong>${key}:</strong></td>
+                            <td>${newVal ?? '-'}</td>
+                        </tr>`;
+                    });
+                    
+                    oldHtml += '</table>';
+                    newHtml += '</table>';
+                    
+                    oldDiv.innerHTML = oldHtml;
+                    newDiv.innerHTML = newHtml;
+                }
+            } catch (e) {
+                console.error('Error comparing values:', e);
+            }
+        }
+    </script>
+
+    <style>
+        @@media print {
+            .btn, .card-header {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+        
+        pre code {
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+    </style>
+}

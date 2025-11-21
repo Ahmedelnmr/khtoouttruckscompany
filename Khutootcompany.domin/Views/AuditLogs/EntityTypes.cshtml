@@ -1,0 +1,453 @@
+﻿@model dynamic
+
+@{
+    ViewData["Title"] = "أنواع الكيانات";
+    var entities = Model as IEnumerable<dynamic>;
+    var totalEntities = entities.Count();
+    var totalChanges = entities.Sum(e => (int)e.Count);
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-database"></i> أنواع الكيانات
+            <span class="badge bg-primary">@totalEntities نوع</span>
+        </h1>
+        <div>
+            <a href="/AuditLogs" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للسجل
+            </a>
+            <a href="/AuditLogs/UserActivity" class="btn btn-info">
+                <i class="fas fa-users"></i> نشاط المستخدمين
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow text-center bg-primary text-white">
+                <div class="card-body">
+                    <i class="fas fa-database fa-3x mb-3"></i>
+                    <h6>أنواع الكيانات</h6>
+                    <h2>@totalEntities</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center bg-success text-white">
+                <div class="card-body">
+                    <i class="fas fa-edit fa-3x mb-3"></i>
+                    <h6>إجمالي التعديلات</h6>
+                    <h2>@totalChanges</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center bg-info text-white">
+                <div class="card-body">
+                    <i class="fas fa-calculator fa-3x mb-3"></i>
+                    <h6>متوسط التعديلات</h6>
+                    <h2>@(totalEntities > 0 ? (totalChanges / totalEntities) : 0)</h2>
+                    <small>لكل كيان</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow text-center bg-warning text-dark">
+                <div class="card-body">
+                    <i class="fas fa-star fa-3x mb-3"></i>
+                    <h6>الأكثر تعديلاً</h6>
+                    <h3 class="mb-0">
+                        @if (entities.Any())
+                        {
+                            var mostModified = entities.OrderByDescending(e => (int)e.Count).First();
+                            @mostModified.EntityName
+                        }
+                        else
+                        {
+                            <text>-</text>
+                        }
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Card -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> توزيع التعديلات حسب نوع الكيان
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="entityChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie"></i> النسب المئوية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="entityPieChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entities Grid -->
+    <div class="row mb-4">
+        @{
+            int cardIndex = 1;
+            var colors = new[] { "primary", "success", "info", "warning", "danger", "secondary", "dark" };
+        }
+        @foreach (var entity in entities.OrderByDescending(e => (int)e.Count))
+        {
+            var percentage = totalChanges > 0 ? ((int)entity.Count * 100.0 / totalChanges) : 0;
+            var color = colors[(cardIndex - 1) % colors.Length];
+            var lastModified = (DateTime)entity.LastModified;
+            var daysSince = (DateTime.Now - lastModified).Days;
+
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow border-@color h-100">
+                    <div class="card-header bg-@color text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cube"></i> @entity.EntityName
+                            @if (cardIndex == 1)
+                            {
+                                <span class="badge bg-warning text-dark float-end">
+                                    <i class="fas fa-crown"></i>
+                                </span>
+                            }
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <h6 class="text-muted small">عدد التعديلات</h6>
+                                <h2 class="text-@color mb-0">@entity.Count</h2>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-muted small">النسبة</h6>
+                                <h2 class="text-@color mb-0">@percentage.ToString("N1")%</h2>
+                            </div>
+                        </div>
+
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div class="progress-bar bg-@color" style="width: @percentage%">
+                                @percentage.ToString("N1")%
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> آخر تعديل
+                            </small>
+                            <small>
+                                <strong>@lastModified.ToString("dd/MM/yyyy")</strong>
+                            </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> منذ
+                            </small>
+                            <small>
+                                <span class="badge bg-@(daysSince <= 7 ? "success" : daysSince <= 30 ? "warning" : "secondary")">
+                                    @if (daysSince == 0)
+                                    {
+                                        <text>اليوم</text>
+                                    }
+                                    else if (daysSince == 1)
+                                    {
+                                        <text>أمس</text>
+                                    }
+                                    else
+                                    {
+                                        <text>@daysSince يوم</text>
+                                    }
+                                </span>
+                            </small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a href="/AuditLogs?entityName=@entity.EntityName" class="btn btn-outline-@color">
+                                <i class="fas fa-list"></i> عرض السجل
+                            </a>
+                            <button class="btn btn-@color" data-bs-toggle="modal" data-bs-target="#entityModal-@cardIndex">
+                                <i class="fas fa-info-circle"></i> التفاصيل
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted text-center small">
+                        الترتيب: #@cardIndex من أصل @totalEntities
+                    </div>
+                </div>
+
+                <!-- Entity Details Modal -->
+                <div class="modal fade" id="entityModal-@cardIndex" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-@color text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-database"></i> تفاصيل @entity.EntityName
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <h6 class="text-muted">نوع الكيان</h6>
+                                        <h4>@entity.EntityName</h4>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="text-muted">آخر تعديل</h6>
+                                        <h4>@lastModified.ToString("dd/MM/yyyy HH:mm")</h4>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-@color">
+                                    <h5 class="alert-heading">
+                                        <i class="fas fa-chart-line"></i> الإحصائيات
+                                    </h5>
+                                    <hr>
+                                    <ul class="mb-0">
+                                        <li>عدد التعديلات: <strong>@entity.Count</strong></li>
+                                        <li>النسبة من الإجمالي: <strong>@percentage.ToString("N1")%</strong></li>
+                                        <li>الترتيب: <strong>#@cardIndex</strong> من أصل @totalEntities</li>
+                                        <li>آخر تعديل: منذ <strong>@daysSince</strong> يوم</li>
+                                    </ul>
+                                </div>
+
+                                <div class="text-center mt-4">
+                                    <h6 class="mb-3">توزيع التعديلات</h6>
+                                    <div class="progress" style="height: 40px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-@color" 
+                                             style="width: @percentage%">
+                                            @entity.Count تعديل (@percentage.ToString("N1")%)
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr>
+
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle"></i> معلومات إضافية</h6>
+                                    <p class="mb-0">
+                                        هذا الكيان يمثل <strong>@percentage.ToString("N1")%</strong> من إجمالي التعديلات في النظام.
+                                        @if (cardIndex == 1)
+                                        {
+                                            <br/>
+                                            <span class="badge bg-warning text-dark mt-2">
+                                                <i class="fas fa-trophy"></i> الكيان الأكثر تعديلاً
+                                            </span>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <a href="/AuditLogs?entityName=@entity.EntityName" class="btn btn-@color">
+                                    <i class="fas fa-list"></i> عرض السجل الكامل
+                                </a>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times"></i> إغلاق
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            cardIndex++;
+        }
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> جدول تفصيلي
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (entities.Any())
+            {
+                <div class="table-responsive">
+                    <table id="entitiesTable" class="table table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>الترتيب</th>
+                                <th>نوع الكيان</th>
+                                <th>عدد التعديلات</th>
+                                <th>النسبة</th>
+                                <th>آخر تعديل</th>
+                                <th>الحالة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int tableIndex = 1;
+                            }
+                            @foreach (var entity in entities.OrderByDescending(e => (int)e.Count))
+                            {
+                                var percentage = totalChanges > 0 ? ((int)entity.Count * 100.0 / totalChanges) : 0;
+                                var lastModified = (DateTime)entity.LastModified;
+                                var daysSince = (DateTime.Now - lastModified).Days;
+                                var statusClass = daysSince <= 7 ? "success" : daysSince <= 30 ? "warning" : "secondary";
+
+                                <tr>
+                                    <td>
+                                        <strong>#@tableIndex</strong>
+                                        @if (tableIndex == 1)
+                                        {
+                                            <i class="fas fa-crown text-warning ms-2"></i>
+                                        }
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-cube text-primary"></i>
+                                        <strong>@entity.EntityName</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary" style="font-size: 1rem;">
+                                            @entity.Count
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="min-width: 120px; height: 25px;">
+                                            <div class="progress-bar bg-success" style="width: @percentage%">
+                                                @percentage.ToString("N1")%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <i class="fas fa-calendar"></i>
+                                            @lastModified.ToString("dd/MM/yyyy")
+                                            <br/>
+                                            <span class="text-muted">
+                                                @lastModified.ToString("HH:mm")
+                                            </span>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@statusClass">
+                                            @if (daysSince == 0)
+                                            {
+                                                <text><i class="fas fa-fire"></i> نشط اليوم</text>
+                                            }
+                                            else if (daysSince <= 7)
+                                            {
+                                                <text><i class="fas fa-check"></i> نشط</text>
+                                            }
+                                            else if (daysSince <= 30)
+                                            {
+                                                <text><i class="fas fa-clock"></i> نشاط متوسط</text>
+                                            }
+                                            else
+                                            {
+                                                <text><i class="fas fa-pause"></i> غير نشط</text>
+                                            }
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="/AuditLogs?entityName=@entity.EntityName" class="btn btn-sm btn-info">
+                                            <i class="fas fa-list"></i> السجل
+                                        </a>
+                                    </td>
+                                </tr>
+                                tableIndex++;
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="2" class="text-end">الإجمالي:</th>
+                                <th>@totalChanges</th>
+                                <th colspan="4"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h5>لا توجد بيانات</h5>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#entitiesTable').DataTable({
+                "language": {"url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"},
+                "pageLength": 25,
+                "order": [[2, "desc"]],
+                "columnDefs": [
+                    { "orderable": false, "targets": -1 }
+                ]
+            });
+
+            // Bar Chart
+            const barCtx = document.getElementById('entityChart');
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", entities.Select(e => $"'{e.EntityName}'")))],
+                    datasets: [{
+                        label: 'عدد التعديلات',
+                        data: [@string.Join(",", entities.Select(e => e.Count))],
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+
+            // Pie Chart
+            const pieCtx = document.getElementById('entityPieChart');
+            new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", entities.Select(e => $"'{e.EntityName}'")))],
+                    datasets: [{
+                        data: [@string.Join(",", entities.Select(e => e.Count))],
+                        backgroundColor: [
+                            '#007bff', '#28a745', '#17a2b8', '#ffc107', 
+                            '#dc3545', '#6c757d', '#343a40', '#fd7e14'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        });
+    </script>
+}

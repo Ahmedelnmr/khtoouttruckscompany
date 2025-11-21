@@ -1,0 +1,286 @@
+﻿@model Khutootcompany.Application.DTOs.InstallmentDto
+
+@{
+    ViewData["Title"] = "حذف القسط";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-danger">
+            <i class="fas fa-trash-alt"></i> تأكيد حذف القسط
+        </h1>
+        <a href="/Installments/Details/@Model.InstallmentId" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع للتفاصيل
+        </a>
+    </div>
+
+    <div class="alert alert-danger border-danger shadow" role="alert">
+        <h4 class="alert-heading">
+            <i class="fas fa-exclamation-triangle"></i> تحذير هام!
+        </h4>
+        <p class="mb-0">
+            هل أنت متأكد من رغبتك في حذف هذا القسط؟ هذا الإجراء لا يمكن التراجع عنه!
+        </p>
+        <hr>
+        <p class="mb-0 small">
+            <strong>ملاحظة:</strong> سيتم حذف القسط وجميع الدفعات المرتبطة به. 
+            الحركات المالية المسجلة ستبقى في النظام للمراجعة.
+        </p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Installment Details Card -->
+            <div class="card shadow mb-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> تفاصيل القسط المراد حذفه
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%"><i class="fas fa-truck text-danger"></i> الشاحنة:</th>
+                                    <td><strong>@Model.TruckPlate</strong></td>
+                                </tr>
+                                <tr>
+                                    <th><i class="fas fa-user text-danger"></i> السائق:</th>
+                                    <td><strong>@Model.EmployeeName</strong></td>
+                                </tr>
+                                <tr>
+                                    <th><i class="fas fa-calendar-alt text-danger"></i> تاريخ البداية:</th>
+                                    <td>@Model.StartDate.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                                <tr>
+                                    <th><i class="fas fa-clock text-danger"></i> المدة:</th>
+                                    <td>@Model.TotalMonths شهر</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%"><i class="fas fa-dollar-sign text-success"></i> سعر المكتب:</th>
+                                    <td><strong>@Model.TotalPriceOffice.ToString("N3") د.ك</strong></td>
+                                </tr>
+                                <tr>
+                                    <th><i class="fas fa-dollar-sign text-warning"></i> سعر الساير:</th>
+                                    <td><strong>@Model.TotalPriceSayer.ToString("N3") د.ك</strong></td>
+                                </tr>
+                                <tr>
+                                    <th><i class="fas fa-chart-line text-info"></i> الربح:</th>
+                                    <td><strong class="text-success">@Model.ProfitMargin.ToString("N3") د.ك</strong></td>
+                                </tr>
+                                <tr>
+                                    <th><i class="fas fa-calendar-check text-primary"></i> القسط الشهري:</th>
+                                    <td><strong>@Model.MonthlyQest.ToString("N3") د.ك</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 bg-success-subtle">
+                                <h6 class="text-muted small">المدفوع</h6>
+                                <h4 class="text-success mb-0">@Model.PaidAmount.ToString("N3")</h4>
+                                <small class="text-muted">د.ك</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 bg-danger-subtle">
+                                <h6 class="text-muted small">المتبقي</h6>
+                                <h4 class="text-danger mb-0">@Model.RemainingAmount.ToString("N3")</h4>
+                                <small class="text-muted">د.ك</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 bg-primary-subtle">
+                                <h6 class="text-muted small">نسبة الإنجاز</h6>
+                                <h4 class="text-primary mb-0">@Model.ProgressPercentage.ToString("N0")%</h4>
+                                <div class="progress mt-2" style="height: 10px;">
+                                    <div class="progress-bar bg-primary" style="width: @Model.ProgressPercentage%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <hr>
+                        <div class="alert alert-light">
+                            <h6><i class="fas fa-sticky-note"></i> ملاحظات:</h6>
+                            <p class="mb-0">@Model.Notes</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Payments to be Deleted -->
+            @if (Model.Payments.Any())
+            {
+                <div class="card shadow mb-4 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-circle"></i> الدفعات التي سيتم حذفها
+                            <span class="badge bg-dark">@Model.Payments.Count دفعة</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>التاريخ</th>
+                                        <th>المبلغ</th>
+                                        <th>النوع</th>
+                                        <th>رقم السند</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var payment in Model.Payments.OrderByDescending(p => p.PaymentDate))
+                                    {
+                                        <tr>
+                                            <td>@payment.PaymentDate.ToString("dd/MM/yyyy")</td>
+                                            <td><strong class="text-success">@payment.Amount.ToString("N3") د.ك</strong></td>
+                                            <td><span class="badge bg-info">@payment.PaymentType</span></td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(payment.SondNumber))
+                                                {
+                                                    <code>@payment.SondNumber</code>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th>الإجمالي:</th>
+                                        <th colspan="3">
+                                            <strong class="text-success">
+                                                @Model.Payments.Sum(p => p.Amount).ToString("N3") د.ك
+                                            </strong>
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-md-4">
+            <!-- Warning Card -->
+            <div class="card shadow border-danger mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> تحذيرات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3">
+                            <i class="fas fa-times-circle text-danger"></i>
+                            <strong>سيتم حذف القسط نهائياً</strong>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-times-circle text-danger"></i>
+                            <strong>سيتم حذف جميع الدفعات (@Model.Payments.Count دفعة)</strong>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>الحركات المالية ستبقى للمراجعة</strong>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>سيتم تسجيل الحذف في سجل التغييرات</strong>
+                        </li>
+                        <li>
+                            <i class="fas fa-info-circle text-info"></i>
+                            <strong>يمكن إضافة قسط جديد لاحقاً</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="card shadow border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> ملخص الخسارة
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>المبلغ المدفوع:</span>
+                            <strong class="text-success">@Model.PaidAmount.ToString("N3") د.ك</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>المبلغ المتبقي:</span>
+                            <strong class="text-danger">@Model.RemainingAmount.ToString("N3") د.ك</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>الربح المتوقع:</span>
+                            <strong class="text-warning">@Model.ProfitMargin.ToString("N3") د.ك</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Form -->
+    <div class="card shadow border-danger mt-4">
+        <div class="card-body">
+            <form method="post" asp-action="Delete" id="deleteForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.InstallmentId" />
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="text-danger mb-2">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            هل أنت متأكد من رغبتك في حذف هذا القسط؟
+                        </h5>
+                        <p class="text-muted mb-0">
+                            الرجاء التأكد من صحة قرارك قبل المتابعة
+                        </p>
+                    </div>
+                    <div>
+                        <a href="/Installments/Details/@Model.InstallmentId" class="btn btn-secondary btn-lg me-2">
+                            <i class="fas fa-times"></i> إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-danger btn-lg" id="deleteButton">
+                            <i class="fas fa-trash-alt"></i> تأكيد الحذف
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#deleteForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                if (confirm('⚠️ تحذير نهائي!\n\nهل أنت متأكد تماماً من رغبتك في حذف هذا القسط؟\n\nسيتم حذف:\n- القسط\n- @Model.Payments.Count دفعة\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+                    $('#deleteButton').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> جاري الحذف...');
+                    this.submit();
+                }
+            });
+        });
+    </script>
+}
