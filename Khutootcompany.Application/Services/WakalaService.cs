@@ -6,7 +6,6 @@ using Khutootcompany.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Khutootcompany.Application.Services
@@ -64,6 +63,17 @@ namespace Khutootcompany.Application.Services
 
         public async Task<WakalaDto> CreateWakalaAsync(WakalaDto dto, string username)
         {
+            // Validate dates
+            if (dto.ExpiryDate <= dto.IssueDate)
+                throw new ArgumentException("تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار");
+
+            // Validate general wakala
+            if (dto.IsGeneral && dto.TruckId.HasValue)
+                throw new ArgumentException("لا يمكن تحديد شاحنة مع وكالة عامة");
+
+            if (!dto.IsGeneral && !dto.TruckId.HasValue)
+                throw new ArgumentException("يجب تحديد شاحنة للوكالة الخاصة");
+
             var wakala = new Wakala
             {
                 EmployeeId = dto.EmployeeId,
@@ -82,8 +92,16 @@ namespace Khutootcompany.Application.Services
             await _unitOfWork.Wakalat.AddAsync(wakala);
 
             // Create cash transaction if paid
-            if (dto.IsPaid)
+            if (dto.IsPaid && dto.Price > 0)
             {
+                // Get truck plate if not general
+                string truckPlate = null;
+                if (!dto.IsGeneral && dto.TruckId.HasValue)
+                {
+                    var truck = await _unitOfWork.Trucks.GetByIdAsync(dto.TruckId.Value);
+                    truckPlate = truck?.PlateNumber;
+                }
+
                 var transaction = new CashTransaction
                 {
                     TransactionDate = DateTime.Now,
@@ -91,7 +109,7 @@ namespace Khutootcompany.Application.Services
                     Type = TransactionType.وكالة,
                     EmployeeId = dto.EmployeeId,
                     TruckId = dto.TruckId,
-                    Description = $"وكالة {(dto.IsGeneral ? "عامة" : "شاحنة " + dto.TruckPlate)}",
+                    Description = $"وكالة {(dto.IsGeneral ? "عامة" : $"شاحنة {truckPlate}")}",
                     SondNumber = dto.SondNumber,
                     CreatedBy = username,
                     CreatedDate = DateTime.Now
@@ -110,6 +128,13 @@ namespace Khutootcompany.Application.Services
             if (wakala == null)
                 throw new KeyNotFoundException($"Wakala with ID {dto.WakalaId} not found");
 
+            // Validate dates
+            if (dto.ExpiryDate <= dto.IssueDate)
+                throw new ArgumentException("تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار");
+
+            // Track if payment status changed
+            bool wasUnpaidNowPaid = !wakala.IsPaid && dto.IsPaid;
+
             wakala.IssueDate = dto.IssueDate;
             wakala.ExpiryDate = dto.ExpiryDate;
             wakala.IsPaid = dto.IsPaid;
@@ -120,6 +145,33 @@ namespace Khutootcompany.Application.Services
             wakala.UpdatedDate = DateTime.Now;
 
             _unitOfWork.Wakalat.Update(wakala);
+
+            // Create cash transaction if payment status changed to paid
+            if (wasUnpaidNowPaid && dto.Price > 0)
+            {
+                // Get truck plate if not general
+                string truckPlate = null;
+                if (!wakala.IsGeneral && wakala.TruckId.HasValue)
+                {
+                    var truck = await _unitOfWork.Trucks.GetByIdAsync(wakala.TruckId.Value);
+                    truckPlate = truck?.PlateNumber;
+                }
+
+                var transaction = new CashTransaction
+                {
+                    TransactionDate = DateTime.Now,
+                    Amount = -dto.Price,
+                    Type = TransactionType.وكالة,
+                    EmployeeId = dto.EmployeeId,
+                    TruckId = dto.TruckId,
+                    Description = $"وكالة {(wakala.IsGeneral ? "عامة" : $"شاحنة {truckPlate}")} - تحديث حالة الدفع",
+                    SondNumber = dto.SondNumber,
+                    CreatedBy = username,
+                    CreatedDate = DateTime.Now
+                };
+                await _unitOfWork.CashTransactions.AddAsync(transaction);
+            }
+
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(wakala);

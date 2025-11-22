@@ -1,6 +1,349 @@
 ﻿@model IEnumerable<Khutootcompany.Application.DTOs.WakalaDto>
 
 @{
+    ViewData["Title"] = ViewBag.FilterTitle ?? "إدارة الوكالات";
+}
+
+<div class="container-fluid mt-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="text-primary">
+                <i class="fas fa-file-contract me-2"></i>
+                @ViewData["Title"]
+            </h2>
+            <p class="text-muted">إدارة وكالات الموظفين والشاحنات</p>
+        </div>
+        <div class="col-md-4 text-end">
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-action="Create" class="btn btn-success btn-lg">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    إضافة وكالة جديدة
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filter Buttons -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="btn-group w-100" role="group">
+                <a asp-action="Index" class="btn btn-outline-primary @(ViewBag.FilterTitle == "جميع الوكالات" ? "active" : "")">
+                    <i class="fas fa-list me-2"></i>الكل
+                </a>
+                <a asp-action="Index" asp-route-filter="expired" class="btn btn-outline-danger @(ViewBag.FilterTitle == "وكالات منتهية" ? "active" : "")">
+                    <i class="fas fa-exclamation-triangle me-2"></i>منتهية
+                </a>
+                <a asp-action="Index" asp-route-filter="expiring" class="btn btn-outline-warning @(ViewBag.FilterTitle == "وكالات تنتهي قريباً" ? "active" : "")">
+                    <i class="fas fa-clock me-2"></i>تنتهي قريباً
+                </a>
+                <a asp-action="Index" asp-route-filter="general" class="btn btn-outline-info @(ViewBag.FilterTitle == "وكالات عامة" ? "active" : "")">
+                    <i class="fas fa-globe me-2"></i>عامة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">إجمالي الوكالات</h6>
+                            <h2 class="card-title mb-0">@Model.Count()</h2>
+                        </div>
+                        <i class="fas fa-file-contract fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">منتهية</h6>
+                            <h2 class="card-title mb-0">@Model.Count(w => w.IsExpired)</h2>
+                        </div>
+                        <i class="fas fa-exclamation-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">تنتهي قريباً</h6>
+                            <h2 class="card-title mb-0">@Model.Count(w => w.IsExpiringSoon)</h2>
+                        </div>
+                        <i class="fas fa-clock fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">وكالات عامة</h6>
+                            <h2 class="card-title mb-0">@Model.Count(w => w.IsGeneral)</h2>
+                        </div>
+                        <i class="fas fa-globe fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wakalat Table -->
+    <div class="card shadow">
+        <div class="card-header bg-white">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        قائمة الوكالات
+                    </h5>
+                </div>
+                <div class="col-auto">
+                    <input type="text" id="searchInput" class="form-control" placeholder="بحث...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0" id="wakalatTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>الحالة</th>
+                                <th>الموظف</th>
+                                <th>الشاحنة</th>
+                                <th>نوع الوكالة</th>
+                                <th>تاريخ الإصدار</th>
+                                <th>تاريخ الانتهاء</th>
+                                <th>الأيام المتبقية</th>
+                                <th>السعر</th>
+                                <th>حالة الدفع</th>
+                                <th>رقم السند</th>
+                                <th class="text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var wakala in Model.OrderByDescending(w => w.IssueDate))
+                            {
+                                var daysLeft = (wakala.ExpiryDate - DateTime.Today).Days;
+                                var statusClass = wakala.IsExpired ? "danger" :
+                                wakala.IsExpiringSoon ? "warning" :
+                                wakala.IsWarning ? "info" : "success";
+                                var statusIcon = wakala.IsExpired ? "fa-times-circle" :
+                                wakala.IsExpiringSoon ? "fa-exclamation-triangle" :
+                                wakala.IsWarning ? "fa-info-circle" : "fa-check-circle";
+                                var statusText = wakala.IsExpired ? "منتهية" :
+                                wakala.IsExpiringSoon ? "تنتهي قريباً" :
+                                wakala.IsWarning ? "تحذير" : "سارية";
+
+                                <tr class="table-@statusClass">
+                                    <td>
+                                        <span class="badge bg-@statusClass">
+                                            <i class="fas @statusIcon me-1"></i>
+                                            @statusText
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>@wakala.EmployeeName</strong>
+                                    </td>
+                                    <td>
+                                        @if (wakala.TruckPlate != null)
+                                        {
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-truck me-1"></i>
+                                                @wakala.TruckPlate
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (wakala.IsGeneral)
+                                        {
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-globe me-1"></i>
+                                                عامة
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-truck me-1"></i>
+                                                خاصة
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>@wakala.IssueDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@wakala.ExpiryDate.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (daysLeft < 0)
+                                        {
+                                            <span class="text-danger fw-bold">
+                                                انتهت منذ @Math.Abs(daysLeft) يوم
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="@(daysLeft <= 30 ? "text-danger" : daysLeft <= 60 ? "text-warning" : "text-success") fw-bold">
+                                                @daysLeft يوم
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="fw-bold">@wakala.Price.ToString("N2") ج.م</td>
+                                    <td>
+                                        @if (wakala.IsPaid)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>
+                                                مدفوعة
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>
+                                                غير مدفوعة
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(wakala.SondNumber))
+                                        {
+                                            <span class="badge bg-dark">@wakala.SondNumber</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="Details" asp-route-id="@wakala.WakalaId"
+                                               class="btn btn-info" title="التفاصيل">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            @if (User.IsInRole("Admin"))
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@wakala.WakalaId"
+                                                   class="btn btn-warning" title="تعديل">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-danger"
+                                                        onclick="confirmDelete(@wakala.WakalaId)" title="حذف">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">لا توجد وكالات متاحة</h4>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-action="Create" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus me-2"></i>
+                            إضافة وكالة جديدة
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">هل أنت متأكد من حذف هذه الوكالة؟</p>
+                <p class="text-danger mb-0"><small>هذا الإجراء لا يمكن التراجع عنه!</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>إلغاء
+                </button>
+                <form id="deleteForm" method="post" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>حذف
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const tableRows = document.querySelectorAll('#wakalatTable tbody tr');
+
+            tableRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchValue) ? '' : 'none';
+            });
+        });
+
+        // Delete confirmation
+        function confirmDelete(id) {
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            const form = document.getElementById('deleteForm');
+            form.action = `/Wakalat/Delete/${id}`;
+            modal.show();
+        }
+    </script>
+}
+
+
+
+
+@* @model IEnumerable<Khutootcompany.Application.DTOs.WakalaDto>
+
+@{
     ViewData["Title"] = "الوكالات";
     var filterTitle = ViewBag.FilterTitle ?? "جميع الوكالات";
 }
@@ -43,7 +386,7 @@
                 </a>
                 <a href="/Wakalat?filter=truck-specific" class="btn btn-outline-secondary">
                     <i class="fas fa-truck"></i> وكالات على شاحنات
-                </a>
+                </a>    
                 <a href="/Wakalat?filter=valid" class="btn btn-outline-success">
                     <i class="fas fa-check-circle"></i> صالحة
                 </a>
@@ -426,4 +769,4 @@
     .table-info {
         background-color: #cff4fc !important;
     }
-</style>
+</style> *@
