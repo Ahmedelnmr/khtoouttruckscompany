@@ -61,18 +61,15 @@ namespace Khutootcompany.Application.Services
             return wakalat.Select(MapToDto);
         }
 
+        // ⭐ CREATE - محسّن مع validation
         public async Task<WakalaDto> CreateWakalaAsync(WakalaDto dto, string username)
         {
-            // Validate dates
-            if (dto.ExpiryDate <= dto.IssueDate)
-                throw new ArgumentException("تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار");
-
-            // Validate general wakala
-            if (dto.IsGeneral && dto.TruckId.HasValue)
-                throw new ArgumentException("لا يمكن تحديد شاحنة مع وكالة عامة");
-
+            // Validation
             if (!dto.IsGeneral && !dto.TruckId.HasValue)
-                throw new ArgumentException("يجب تحديد شاحنة للوكالة الخاصة");
+                throw new InvalidOperationException("يجب تحديد الشاحنة للوكالة غير العامة");
+
+            if (dto.ExpiryDate <= dto.IssueDate)
+                throw new InvalidOperationException("تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار");
 
             var wakala = new Wakala
             {
@@ -91,17 +88,9 @@ namespace Khutootcompany.Application.Services
 
             await _unitOfWork.Wakalat.AddAsync(wakala);
 
-            // Create cash transaction if paid
+            // ⭐ Create cash transaction if paid
             if (dto.IsPaid && dto.Price > 0)
             {
-                // Get truck plate if not general
-                string truckPlate = null;
-                if (!dto.IsGeneral && dto.TruckId.HasValue)
-                {
-                    var truck = await _unitOfWork.Trucks.GetByIdAsync(dto.TruckId.Value);
-                    truckPlate = truck?.PlateNumber;
-                }
-
                 var transaction = new CashTransaction
                 {
                     TransactionDate = DateTime.Now,
@@ -109,7 +98,9 @@ namespace Khutootcompany.Application.Services
                     Type = TransactionType.وكالة,
                     EmployeeId = dto.EmployeeId,
                     TruckId = dto.TruckId,
-                    Description = $"وكالة {(dto.IsGeneral ? "عامة" : $"شاحنة {truckPlate}")}",
+                    Description = dto.IsGeneral
+                        ? $"وكالة عامة - {dto.EmployeeName}"
+                        : $"وكالة شاحنة {dto.TruckPlate}",
                     SondNumber = dto.SondNumber,
                     CreatedBy = username,
                     CreatedDate = DateTime.Now
@@ -122,17 +113,22 @@ namespace Khutootcompany.Application.Services
             return MapToDto(wakala);
         }
 
+        // ⭐ UPDATE - محسّن
         public async Task<WakalaDto> UpdateWakalaAsync(WakalaDto dto, string username)
         {
             var wakala = await _unitOfWork.Wakalat.GetByIdAsync(dto.WakalaId);
             if (wakala == null)
-                throw new KeyNotFoundException($"Wakala with ID {dto.WakalaId} not found");
+                throw new KeyNotFoundException($"الوكالة رقم {dto.WakalaId} غير موجودة");
 
-            // Validate dates
+            // Validation
+            if (!dto.IsGeneral && !dto.TruckId.HasValue)
+                throw new InvalidOperationException("يجب تحديد الشاحنة للوكالة غير العامة");
+
             if (dto.ExpiryDate <= dto.IssueDate)
-                throw new ArgumentException("تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار");
+                throw new InvalidOperationException("تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار");
 
             // Track if payment status changed
+            bool paymentChanged = wakala.IsPaid != dto.IsPaid;
             bool wasUnpaidNowPaid = !wakala.IsPaid && dto.IsPaid;
 
             wakala.IssueDate = dto.IssueDate;
@@ -146,17 +142,9 @@ namespace Khutootcompany.Application.Services
 
             _unitOfWork.Wakalat.Update(wakala);
 
-            // Create cash transaction if payment status changed to paid
+            // ⭐ إذا تم تغيير حالة الدفع من غير مدفوع لمدفوع
             if (wasUnpaidNowPaid && dto.Price > 0)
             {
-                // Get truck plate if not general
-                string truckPlate = null;
-                if (!wakala.IsGeneral && wakala.TruckId.HasValue)
-                {
-                    var truck = await _unitOfWork.Trucks.GetByIdAsync(wakala.TruckId.Value);
-                    truckPlate = truck?.PlateNumber;
-                }
-
                 var transaction = new CashTransaction
                 {
                     TransactionDate = DateTime.Now,
@@ -164,7 +152,9 @@ namespace Khutootcompany.Application.Services
                     Type = TransactionType.وكالة,
                     EmployeeId = dto.EmployeeId,
                     TruckId = dto.TruckId,
-                    Description = $"وكالة {(wakala.IsGeneral ? "عامة" : $"شاحنة {truckPlate}")} - تحديث حالة الدفع",
+                    Description = dto.IsGeneral
+                        ? $"دفع وكالة عامة - {dto.EmployeeName}"
+                        : $"دفع وكالة شاحنة {dto.TruckPlate}",
                     SondNumber = dto.SondNumber,
                     CreatedBy = username,
                     CreatedDate = DateTime.Now
@@ -177,11 +167,12 @@ namespace Khutootcompany.Application.Services
             return MapToDto(wakala);
         }
 
+        // ⭐ DELETE
         public async Task DeleteWakalaAsync(int id, string username)
         {
             var wakala = await _unitOfWork.Wakalat.GetByIdAsync(id);
             if (wakala == null)
-                throw new KeyNotFoundException($"Wakala with ID {id} not found");
+                throw new KeyNotFoundException($"الوكالة رقم {id} غير موجودة");
 
             wakala.IsDeleted = true;
             wakala.DeletedBy = username;
@@ -191,6 +182,7 @@ namespace Khutootcompany.Application.Services
             await _unitOfWork.SaveChangesAsync();
         }
 
+        // ⭐ MAPPING
         private WakalaDto MapToDto(Wakala wakala)
         {
             return new WakalaDto
@@ -211,7 +203,9 @@ namespace Khutootcompany.Application.Services
                 IsExpiringSoon = wakala.IsExpiringSoon(),
                 IsWarning = wakala.IsWarning(),
                 CreatedBy = wakala.CreatedBy,
-                CreatedDate = wakala.CreatedDate
+                CreatedDate = wakala.CreatedDate,
+                UpdatedBy = wakala.UpdatedBy,
+                UpdatedDate = wakala.UpdatedDate
             };
         }
     }

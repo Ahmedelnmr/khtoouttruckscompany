@@ -1,5 +1,287 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model Khutootcompany.Application.DTOs.VisitCardDto
+
 @{
+    ViewData["Title"] = "حذف كارت الزيارة";
 }
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-danger">
+            <i class="fas fa-trash-alt"></i> حذف كارت الزيارة
+        </h1>
+        <a href="/VisitCards" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع للقائمة
+        </a>
+    </div>
+
+    <!-- Warning Alert -->
+    <div class="alert alert-danger alert-dismissible fade show shadow-lg" role="alert">
+        <h4 class="alert-heading">
+            <i class="fas fa-exclamation-triangle"></i> تحذير: عملية حذف نهائية!
+        </h4>
+        <p>
+            أنت على وشك حذف كارت الزيارة هذا نهائياً من النظام.
+            <strong>لا يمكن التراجع عن هذا الإجراء!</strong>
+        </p>
+        <hr>
+        <p class="mb-0">
+            <i class="fas fa-info-circle"></i>
+            إذا لم تكن متأكداً، يمكنك الضغط على "إلغاء" للعودة إلى القائمة.
+        </p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Card Details to be Deleted -->
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-id-card"></i> تفاصيل الكارت المراد حذفه
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-user"></i> الموظف
+                            </h6>
+                            <p class="fs-5">
+                                <strong>@Model.EmployeeName</strong>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-truck"></i> الشاحنة
+                            </h6>
+                            <p class="fs-5">
+                                <strong>@(Model.TruckPlate ?? "غير محددة")</strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-calendar-plus"></i> تاريخ الإصدار
+                            </h6>
+                            <p><strong>@Model.IssueDate.ToString("dd/MM/yyyy")</strong></p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-calendar-times"></i> تاريخ الانتهاء
+                            </h6>
+                            <p><strong>@Model.ExpiryDate.ToString("dd/MM/yyyy")</strong></p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-money-bill-wave"></i> السعر
+                            </h6>
+                            <p><strong class="text-success">@Model.Price.ToString("N3") د.ك</strong></p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-credit-card"></i> حالة الدفع
+                            </h6>
+                            <p>
+                                @if (Model.IsPaid)
+                                {
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check"></i> مدفوع
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-times"></i> غير مدفوع
+                                    </span>
+                                }
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-chart-line"></i> الحالة
+                            </h6>
+                            <p>
+                                @if (Model.IsExpired)
+                                {
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-times-circle"></i> منتهي
+                                    </span>
+                                }
+                                else if (Model.IsExpiringSoon)
+                                {
+                                    <span class="badge bg-warning text-dark fs-6">
+                                        <i class="fas fa-exclamation-triangle"></i> ينتهي قريباً
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check-circle"></i> صالح
+                                    </span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.IntermediaryName) || !string.IsNullOrEmpty(Model.IntermediaryPhone))
+                    {
+                        <hr>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-user-tie"></i> بيانات الوسيط
+                                </h6>
+                                @if (!string.IsNullOrEmpty(Model.IntermediaryName))
+                                {
+                                    <p class="mb-1"><strong>الاسم:</strong> @Model.IntermediaryName</p>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.IntermediaryPhone))
+                                {
+                                    <p class="mb-0"><strong>الهاتف:</strong> @Model.IntermediaryPhone</p>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.SondNumber))
+                    {
+                        <hr>
+                        <p class="mb-0">
+                            <strong><i class="fas fa-receipt"></i> رقم السند:</strong>
+                            <span class="badge bg-info">@Model.SondNumber</span>
+                        </p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <hr>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-sticky-note"></i> ملاحظات
+                                </h6>
+                                <p class="mb-0">@Model.Notes</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Confirmation Form -->
+            <div class="card shadow border-danger mt-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> تأكيد عملية الحذف
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="DeleteConfirmed" asp-route-id="@Model.VisitCardId" id="deleteForm">
+                        @Html.AntiForgeryToken()
+
+                        <div class="alert alert-warning">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirmCheck" required>
+                                <label class="form-check-label" for="confirmCheck">
+                                    <strong>أؤكد أنني أريد حذف هذا الكارت نهائياً</strong>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between gap-3">
+                            <a href="/VisitCards" class="btn btn-secondary btn-lg flex-fill">
+                                <i class="fas fa-times"></i> إلغاء
+                            </a>
+                            <a href="/VisitCards/Details/@Model.VisitCardId" class="btn btn-info btn-lg flex-fill">
+                                <i class="fas fa-eye"></i> عرض التفاصيل
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg flex-fill" id="deleteBtn" disabled>
+                                <i class="fas fa-trash"></i> تأكيد الحذف النهائي
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Impact Warning -->
+            <div class="card shadow border-warning mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i> ماذا سيحدث عند الحذف؟
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>سيتم حذف سجل كارت الزيارة نهائياً من قاعدة البيانات</li>
+                        <li>لن يكون بالإمكان استرجاع هذه البيانات</li>
+                        <li>سيتم تسجيل عملية الحذف في سجل التدقيق</li>
+                        <li><strong>تنبيه:</strong> إذا كانت هناك حركات مالية مرتبطة، قد تحتاج لمراجعتها</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Audit Info -->
+            <div class="card shadow mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history"></i> معلومات السجل
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>تم الإنشاء بواسطة:</strong> @Model.CreatedBy</p>
+                            <p class="mb-0"><strong>تاريخ الإنشاء:</strong> @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>رقم الكارت:</strong> #@Model.VisitCardId</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Enable/disable delete button based on checkbox
+            $('#confirmCheck').on('change', function() {
+                $('#deleteBtn').prop('disabled', !$(this).is(':checked'));
+            });
+
+            // Final confirmation before submit
+            $('#deleteForm').on('submit', function(e) {
+                if (!$('#confirmCheck').is(':checked')) {
+                    e.preventDefault();
+                    alert('يجب التأكيد على رغبتك في الحذف');
+                    return false;
+                }
+
+                if (!confirm('هل أنت متأكد 100% من حذف هذا الكارت؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    .border-danger {
+        border-width: 2px !important;
+    }
+
+    #deleteBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>

@@ -1,5 +1,424 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model Khutootcompany.Application.DTOs.VisitCardDto
+
 @{
+    ViewData["Title"] = "تفاصيل كارت الزيارة";
+    var daysRemaining = (Model.ExpiryDate - DateTime.Today).Days;
 }
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-id-card"></i> تفاصيل كارت الزيارة
+        </h1>
+        <div class="btn-group">
+            <a href="/VisitCards" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للقائمة
+            </a>
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/VisitCards/Edit/@Model.VisitCardId" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> تعديل
+                </a>
+                if (Model.IsExpired)
+                {
+                    <a href="/VisitCards/Renew/@Model.VisitCardId" class="btn btn-success">
+                        <i class="fas fa-redo"></i> تجديد
+                    </a>
+                }
+                <button onclick="confirmDelete(@Model.VisitCardId)" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> حذف
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Status Alert -->
+    @if (Model.IsExpired)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow" role="alert">
+            <h5 class="alert-heading">
+                <i class="fas fa-exclamation-triangle"></i> كارت منتهي الصلاحية!
+            </h5>
+            <p class="mb-0">
+                <strong>انتهى منذ @Math.Abs(daysRemaining) يوم</strong> - يجب تجديد الكارت فوراً قبل استخدام الشاحنة
+            </p>
+            @if (User.IsInRole("Admin"))
+            {
+                <hr>
+                <a href="/VisitCards/Renew/@Model.VisitCardId" class="btn btn-success btn-sm">
+                    <i class="fas fa-redo"></i> تجديد الآن
+                </a>
+            }
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    else if (Model.IsExpiringSoon)
+    {
+        <div class="alert alert-warning alert-dismissible fade show shadow" role="alert">
+            <h5 class="alert-heading">
+                <i class="fas fa-clock"></i> كارت ينتهي قريباً!
+            </h5>
+            <p class="mb-0">
+                <strong>المتبقي: @daysRemaining يوم فقط</strong> - يُنصح بالتجديد قبل الانتهاء
+            </p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    else if (Model.IsWarning)
+    {
+        <div class="alert alert-info alert-dismissible fade show shadow" role="alert">
+            <h5 class="alert-heading">
+                <i class="fas fa-info-circle"></i> تحذير مبكر
+            </h5>
+            <p class="mb-0">
+                <strong>المتبقي: @daysRemaining يوم</strong> - لا تزال مدة كافية
+            </p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow" role="alert">
+            <h5 class="alert-heading">
+                <i class="fas fa-check-circle"></i> كارت صالح
+            </h5>
+            <p class="mb-0">
+                <strong>المتبقي: @daysRemaining يوم</strong> - الكارت ساري المفعول
+            </p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Main Card Info -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> المعلومات الأساسية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-user"></i> الموظف
+                            </h6>
+                            <p class="fs-5">
+                                <a href="/Employees/Details/@Model.EmployeeId" class="text-decoration-none">
+                                    <strong>@Model.EmployeeName</strong>
+                                </a>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-truck"></i> الشاحنة
+                            </h6>
+                            <p class="fs-5">
+                                @if (Model.TruckId.HasValue)
+                                {
+                                    <a href="/Trucks/Details/@Model.TruckId" class="text-decoration-none">
+                                        <strong>@Model.TruckPlate</strong>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">غير محددة</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-calendar-plus"></i> تاريخ الإصدار
+                            </h6>
+                            <p class="fs-6">
+                                <strong>@Model.IssueDate.ToString("dd/MM/yyyy")</strong>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-calendar-times"></i> تاريخ الانتهاء
+                            </h6>
+                            <p class="fs-6">
+                                <strong class="@(Model.IsExpired ? "text-danger" : Model.IsExpiringSoon ? "text-warning" : "text-success")">
+                                    @Model.ExpiryDate.ToString("dd/MM/yyyy")
+                                </strong>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-clock"></i> المدة المتبقية
+                            </h6>
+                            <p class="fs-6">
+                                @if (Model.IsExpired)
+                                {
+                                    <span class="badge bg-danger fs-6">منتهي منذ @Math.Abs(daysRemaining) يوم</span>
+                                }
+                                else
+                                {
+                                    <span class="badge @(daysRemaining <= 30 ? "bg-warning text-dark" : daysRemaining <= 60 ? "bg-info" : "bg-success") fs-6">
+                                        @daysRemaining يوم
+                                    </span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Intermediary Info -->
+                    @if (!string.IsNullOrEmpty(Model.IntermediaryName) || !string.IsNullOrEmpty(Model.IntermediaryPhone))
+                    {
+                        <div class="card bg-light mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-user-tie"></i> بيانات الوسيط
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    @if (!string.IsNullOrEmpty(Model.IntermediaryName))
+                                    {
+                                        <div class="col-md-6">
+                                            <p class="mb-2">
+                                                <strong>الاسم:</strong> @Model.IntermediaryName
+                                            </p>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(Model.IntermediaryPhone))
+                                    {
+                                        <div class="col-md-6">
+                                            <p class="mb-2">
+                                                <strong>الهاتف:</strong>
+                                                <a href="tel:@Model.IntermediaryPhone">@Model.IntermediaryPhone</a>
+                                            </p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Notes -->
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-sticky-note"></i> ملاحظات
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-0">@Model.Notes</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Audit Trail -->
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history"></i> سجل التدقيق
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>تم الإنشاء بواسطة:</strong> @Model.CreatedBy</p>
+                            <p class="mb-0"><strong>تاريخ الإنشاء:</strong> @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Financial Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave"></i> المعلومات المالية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h2 class="display-4 text-success mb-0">@Model.Price.ToString("N3")</h2>
+                        <p class="text-muted">دينار كويتي</p>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><i class="fas fa-credit-card"></i> حالة الدفع:</span>
+                        @if (Model.IsPaid)
+                        {
+                            <span class="badge bg-success fs-6">
+                                <i class="fas fa-check"></i> مدفوع
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger fs-6">
+                                <i class="fas fa-times"></i> غير مدفوع
+                            </span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.SondNumber))
+                    {
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-receipt"></i> رقم السند:</span>
+                            <span class="badge bg-info">@Model.SondNumber</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header @(Model.IsExpired ? "bg-danger" : Model.IsExpiringSoon ? "bg-warning text-dark" : "bg-success") text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> حالة الكارت
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    @if (Model.IsExpired)
+                    {
+                        <i class="fas fa-times-circle fa-5x text-danger mb-3"></i>
+                        <h4 class="text-danger">منتهي</h4>
+                        <p class="text-muted">انتهى منذ @Math.Abs(daysRemaining) يوم</p>
+                    }
+                    else if (Model.IsExpiringSoon)
+                    {
+                        <i class="fas fa-exclamation-triangle fa-5x text-warning mb-3"></i>
+                        <h4 class="text-warning">ينتهي قريباً</h4>
+                        <p class="text-muted">المتبقي: @daysRemaining يوم</p>
+                    }
+                    else if (Model.IsWarning)
+                    {
+                        <i class="fas fa-info-circle fa-5x text-info mb-3"></i>
+                        <h4 class="text-info">تحذير</h4>
+                        <p class="text-muted">المتبقي: @daysRemaining يوم</p>
+                    }
+                    else
+                    {
+                        <i class="fas fa-check-circle fa-5x text-success mb-3"></i>
+                        <h4 class="text-success">صالح</h4>
+                        <p class="text-muted">المتبقي: @daysRemaining يوم</p>
+                    }
+
+                    <!-- Progress Bar -->
+                    @{
+                        var totalDays = (Model.ExpiryDate - Model.IssueDate).Days;
+                        var daysUsed = (DateTime.Today - Model.IssueDate).Days;
+                        var progressPercent = totalDays > 0 ? (daysUsed * 100.0 / totalDays) : 100;
+                        if (progressPercent > 100) progressPercent = 100;
+                        if (progressPercent < 0) progressPercent = 0;
+                    }
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar @(progressPercent >= 90 ? "bg-danger" : progressPercent >= 70 ? "bg-warning" : "bg-success")"
+                             role="progressbar"
+                             style="width: @progressPercent%;"
+                             aria-valuenow="@progressPercent"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            @progressPercent.ToString("F0")%
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">@daysUsed من @totalDays يوم</small>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-bolt"></i> إجراءات سريعة
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/VisitCards/Edit/@Model.VisitCardId" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> تعديل البيانات
+                            </a>
+                            @if (Model.IsExpired)
+                            {
+                                <a href="/VisitCards/Renew/@Model.VisitCardId" class="btn btn-success">
+                                    <i class="fas fa-redo"></i> تجديد الكارت
+                                </a>
+                            }
+                            <a href="/VisitCards/ByEmployee/@Model.EmployeeId" class="btn btn-secondary">
+                                <i class="fas fa-list"></i> كروت الموظف
+                            </a>
+                            <a href="/Employees/Details/@Model.EmployeeId" class="btn btn-primary">
+                                <i class="fas fa-user"></i> ملف الموظف
+                            </a>
+                            @if (Model.TruckId.HasValue)
+                            {
+                                <a href="/Trucks/Details/@Model.TruckId" class="btn btn-dark">
+                                    <i class="fas fa-truck"></i> ملف الشاحنة
+                                </a>
+                            }
+                            <button onclick="window.print()" class="btn btn-outline-secondary">
+                                <i class="fas fa-print"></i> طباعة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف كارت الزيارة هذا؟</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    سيتم حذف السجل نهائياً ولا يمكن استرجاعه!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="post" action="/VisitCards/Delete/@Model.VisitCardId" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> تأكيد الحذف
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmDelete(cardId) {
+            $('#deleteModal').modal('show');
+        }
+    </script>
+}
+
+<style>
+    @@media print {
+        .btn, .btn-group, .card-header {
+            display: none !important;
+        }
+    }
+</style>

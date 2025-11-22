@@ -2,6 +2,9 @@
 using Khutootcompany.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Khutootcompany.presention.Controllers
 {
@@ -22,7 +25,7 @@ namespace Khutootcompany.presention.Controllers
             _truckService = truckService;
         }
 
-        // GET: Wakalat
+        // ⭐ GET: /Wakalat
         public async Task<IActionResult> Index(string? filter)
         {
             IEnumerable<WakalaDto> wakalat;
@@ -32,29 +35,40 @@ namespace Khutootcompany.presention.Controllers
                 case "expired":
                     wakalat = await _wakalaService.GetExpiredWakalatAsync();
                     ViewBag.FilterTitle = "وكالات منتهية";
-                    ViewBag.CurrentFilter = "expired";
                     break;
                 case "expiring":
                     wakalat = await _wakalaService.GetExpiringSoonWakalatAsync(30);
                     ViewBag.FilterTitle = "وكالات تنتهي قريباً";
-                    ViewBag.CurrentFilter = "expiring";
                     break;
                 case "general":
                     wakalat = await _wakalaService.GetGeneralWakalatAsync();
                     ViewBag.FilterTitle = "وكالات عامة";
-                    ViewBag.CurrentFilter = "general";
+                    break;
+                case "truck-specific":
+                    var all = await _wakalaService.GetAllWakalatAsync();
+                    wakalat = all.Where(w => !w.IsGeneral && w.TruckId.HasValue);
+                    ViewBag.FilterTitle = "وكالات على شاحنات";
+                    break;
+                case "valid":
+                    var allWakalat = await _wakalaService.GetAllWakalatAsync();
+                    wakalat = allWakalat.Where(w => !w.IsExpired);
+                    ViewBag.FilterTitle = "وكالات صالحة";
+                    break;
+                case "unpaid":
+                    var allW = await _wakalaService.GetAllWakalatAsync();
+                    wakalat = allW.Where(w => !w.IsPaid);
+                    ViewBag.FilterTitle = "وكالات غير مدفوعة";
                     break;
                 default:
                     wakalat = await _wakalaService.GetAllWakalatAsync();
                     ViewBag.FilterTitle = "جميع الوكالات";
-                    ViewBag.CurrentFilter = "all";
                     break;
             }
 
             return View(wakalat);
         }
 
-        // GET: Wakalat/Details/5
+        // ⭐ GET: /Wakalat/Details/5
         public async Task<IActionResult> Details(int id)
         {
             var wakala = await _wakalaService.GetWakalaByIdAsync(id);
@@ -64,39 +78,29 @@ namespace Khutootcompany.presention.Controllers
             return View(wakala);
         }
 
-        // GET: Wakalat/Create
+        // ⭐ GET: /Wakalat/Create
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create()
         {
             await PopulateDropdowns();
-            var model = new CreateWakalaDto
-            {
-                IssueDate = DateTime.Now,
-                ExpiryDate = DateTime.Now.AddYears(1)
-            };
-            return View(model);
+            return View(new WakalaDto { IssueDate = DateTime.Now });
         }
 
-        // POST: Wakalat/Create
+        // ⭐ POST: /Wakalat/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create(CreateWakalaDto model)
+        public async Task<IActionResult> Create(WakalaDto wakala)
         {
-            // Additional validation
-            if (model.ExpiryDate <= model.IssueDate)
+            // Custom validation
+            if (!wakala.IsGeneral && !wakala.TruckId.HasValue)
+            {
+                ModelState.AddModelError("TruckId", "يجب تحديد الشاحنة للوكالة غير العامة");
+            }
+
+            if (wakala.ExpiryDate <= wakala.IssueDate)
             {
                 ModelState.AddModelError("ExpiryDate", "تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار");
-            }
-
-            if (!model.IsGeneral && !model.TruckId.HasValue)
-            {
-                ModelState.AddModelError("TruckId", "يجب اختيار شاحنة أو تحديد وكالة عامة");
-            }
-
-            if (model.IsGeneral && model.TruckId.HasValue)
-            {
-                ModelState.AddModelError("IsGeneral", "لا يمكن تحديد شاحنة مع وكالة عامة");
             }
 
             if (ModelState.IsValid)
@@ -104,22 +108,7 @@ namespace Khutootcompany.presention.Controllers
                 try
                 {
                     var username = User.Identity?.Name ?? "Unknown";
-
-                    // Map CreateWakalaDto to WakalaDto
-                    var wakalaDto = new WakalaDto
-                    {
-                        EmployeeId = model.EmployeeId,
-                        TruckId = model.TruckId,
-                        IssueDate = model.IssueDate,
-                        ExpiryDate = model.ExpiryDate,
-                        IsGeneral = model.IsGeneral,
-                        IsPaid = model.IsPaid,
-                        Price = model.Price,
-                        SondNumber = model.SondNumber,
-                        Notes = model.Notes
-                    };
-
-                    await _wakalaService.CreateWakalaAsync(wakalaDto, username);
+                    await _wakalaService.CreateWakalaAsync(wakala, username);
                     TempData["Success"] = "تم إضافة الوكالة بنجاح";
                     return RedirectToAction(nameof(Index));
                 }
@@ -129,11 +118,11 @@ namespace Khutootcompany.presention.Controllers
                 }
             }
 
-            await PopulateDropdowns(model.EmployeeId, model.TruckId);
-            return View(model);
+            await PopulateDropdowns();
+            return View(wakala);
         }
 
-        // GET: Wakalat/Edit/5
+        // ⭐ GET: /Wakalat/Edit/5
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int id)
         {
@@ -141,21 +130,26 @@ namespace Khutootcompany.presention.Controllers
             if (wakala == null)
                 return NotFound();
 
-            await PopulateDropdowns(wakala.EmployeeId, wakala.TruckId);
+            await PopulateDropdowns();
             return View(wakala);
         }
 
-        // POST: Wakalat/Edit/5
+        // ⭐ POST: /Wakalat/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Edit(int id, WakalaDto model)
+        public async Task<IActionResult> Edit(int id, WakalaDto wakala)
         {
-            if (id != model.WakalaId)
+            if (id != wakala.WakalaId)
                 return NotFound();
 
-            // Additional validation
-            if (model.ExpiryDate <= model.IssueDate)
+            // Custom validation
+            if (!wakala.IsGeneral && !wakala.TruckId.HasValue)
+            {
+                ModelState.AddModelError("TruckId", "يجب تحديد الشاحنة للوكالة غير العامة");
+            }
+
+            if (wakala.ExpiryDate <= wakala.IssueDate)
             {
                 ModelState.AddModelError("ExpiryDate", "تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار");
             }
@@ -165,13 +159,9 @@ namespace Khutootcompany.presention.Controllers
                 try
                 {
                     var username = User.Identity?.Name ?? "Unknown";
-                    await _wakalaService.UpdateWakalaAsync(model, username);
-                    TempData["Success"] = "تم تعديل الوكالة بنجاح";
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (KeyNotFoundException)
-                {
-                    return NotFound();
+                    await _wakalaService.UpdateWakalaAsync(wakala, username);
+                    TempData["Success"] = "تم تحديث الوكالة بنجاح";
+                    return RedirectToAction(nameof(Details), new { id = wakala.WakalaId });
                 }
                 catch (Exception ex)
                 {
@@ -179,25 +169,32 @@ namespace Khutootcompany.presention.Controllers
                 }
             }
 
-            await PopulateDropdowns(model.EmployeeId, model.TruckId);
-            return View(model);
+            await PopulateDropdowns();
+            return View(wakala);
         }
 
-        // POST: Wakalat/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        // ⭐ GET: /Wakalat/Delete/5
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
+        {
+            var wakala = await _wakalaService.GetWakalaByIdAsync(id);
+            if (wakala == null)
+                return NotFound();
+
+            return View(wakala);
+        }
+
+        // ⭐ POST: /Wakalat/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
             try
             {
                 var username = User.Identity?.Name ?? "Unknown";
                 await _wakalaService.DeleteWakalaAsync(id, username);
                 TempData["Success"] = "تم حذف الوكالة بنجاح";
-            }
-            catch (KeyNotFoundException)
-            {
-                TempData["Error"] = "الوكالة غير موجودة";
             }
             catch (Exception ex)
             {
@@ -207,55 +204,51 @@ namespace Khutootcompany.presention.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Wakalat/Print/5
-        public async Task<IActionResult> Print(int id)
-        {
-            var wakala = await _wakalaService.GetWakalaByIdAsync(id);
-            if (wakala == null)
-                return NotFound();
-
-            return View(wakala);
-        }
-
-        // GET: Wakalat/ByEmployee/5
+        // ⭐ GET: /Wakalat/ByEmployee/5
         public async Task<IActionResult> ByEmployee(int employeeId)
         {
-            var wakalat = await _wakalaService.GetWakalatByEmployeeAsync(employeeId);
             var employee = await _employeeService.GetEmployeeByIdAsync(employeeId);
+            if (employee == null)
+                return NotFound();
 
-            ViewBag.EmployeeName = employee?.FullName ?? "غير معروف";
+            var wakalat = await _wakalaService.GetWakalatByEmployeeAsync(employeeId);
+
+            ViewBag.EmployeeName = employee.FullName;
+            ViewBag.EmployeeId = employeeId;
+            ViewBag.FilterTitle = $"وكالات الموظف: {employee.FullName}";
+
             return View("Index", wakalat);
         }
 
-        // GET: Wakalat/ByTruck/5
+        // ⭐ GET: /Wakalat/ByTruck/5
         public async Task<IActionResult> ByTruck(int truckId)
         {
-            var wakalat = await _wakalaService.GetWakalatByTruckAsync(truckId);
             var truck = await _truckService.GetTruckByIdAsync(truckId);
+            if (truck == null)
+                return NotFound();
 
-            ViewBag.TruckPlate = truck?.PlateNumber ?? "غير معروف";
+            var wakalat = await _wakalaService.GetWakalatByTruckAsync(truckId);
+
+            ViewBag.TruckPlate = truck.PlateNumber;
+            ViewBag.TruckId = truckId;
+            ViewBag.FilterTitle = $"وكالات الشاحنة: {truck.PlateNumber}";
+
             return View("Index", wakalat);
         }
 
-        // Helper method to populate dropdowns
-        private async Task PopulateDropdowns(int? selectedEmployeeId = null, int? selectedTruckId = null)
+        // ⭐ Helper: Populate Dropdowns
+        private async Task PopulateDropdowns()
         {
             var employees = await _employeeService.GetAllEmployeesAsync();
             var trucks = await _truckService.GetAllTrucksAsync();
 
-            ViewBag.Employees = employees.Select(e => new
-            {
-                Value = e.EmployeeId,
-                Text = e.FullName,
-                Selected = e.EmployeeId == selectedEmployeeId
-            });
+            ViewBag.Employees = employees
+                .OrderBy(e => e.FullName)
+                .Select(e => new { Value = e.EmployeeId, Text = e.FullName });
 
-            ViewBag.Trucks = trucks.Select(t => new
-            {
-                Value = t.TruckId,
-                Text = t.PlateNumber,
-                Selected = t.TruckId == selectedTruckId
-            });
+            ViewBag.Trucks = trucks
+                .OrderBy(t => t.PlateNumber)
+                .Select(t => new { Value = t.TruckId, Text = $"{t.PlateNumber} - {t.Model}" });
         }
     }
 }

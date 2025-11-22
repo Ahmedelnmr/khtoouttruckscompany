@@ -58,7 +58,7 @@ namespace Khutootcompany.Application.Services
                 TruckId = dto.TruckId,
                 IssueDate = dto.IssueDate,
                 ExpiryDate = dto.ExpiryDate,
-                Price = 15m, // Always 15 KD
+                Price = 15m,
                 IsPaid = dto.IsPaid,
                 IntermediaryName = dto.IntermediaryName,
                 IntermediaryPhone = dto.IntermediaryPhone,
@@ -73,14 +73,18 @@ namespace Khutootcompany.Application.Services
             // Create cash transaction if paid
             if (dto.IsPaid)
             {
+                // ✅ Get employee name for better description
+                var employee = await _unitOfWork.Employees.GetByIdAsync(dto.EmployeeId);
+                var employeeName = employee?.FullName ?? "موظف غير معروف";
+
                 var transaction = new CashTransaction
                 {
                     TransactionDate = DateTime.Now,
-                    Amount = -15m, // Negative = expense
+                    Amount = -15m,
                     Type = TransactionType.كارت_زيارة,
                     EmployeeId = dto.EmployeeId,
                     TruckId = dto.TruckId,
-                    Description = $"كارت زيارة - {dto.EmployeeId}",
+                    Description = $"كارت زيارة - {employeeName}",  // ✅ استخدم الاسم
                     SondNumber = dto.SondNumber,
                     CreatedBy = username,
                     CreatedDate = DateTime.Now
@@ -89,7 +93,6 @@ namespace Khutootcompany.Application.Services
             }
 
             await _unitOfWork.SaveChangesAsync();
-
             return MapToDto(card);
         }
 

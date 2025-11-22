@@ -1,5 +1,237 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model Khutootcompany.Application.DTOs.WakalaDto
+
 @{
+    ViewData["Title"] = "تعديل الوكالة";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-edit"></i> تعديل الوكالة #@Model.WakalaId
+        </h1>
+        <div>
+            <a href="/Wakalat/Details/@Model.WakalaId" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع
+            </a>
+            <a href="/Wakalat" class="btn btn-outline-secondary">
+                <i class="fas fa-list"></i> القائمة
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-contract"></i> تحديث بيانات الوكالة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="Edit" id="editWakalaForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="WakalaId" />
+                        <input type="hidden" asp-for="EmployeeId" />
+                        <input type="hidden" asp-for="IsGeneral" />
+                        <input type="hidden" asp-for="TruckId" />
+
+                        <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+                        <!-- Read-only Info -->
+                        <div class="alert alert-info mb-4">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle"></i> معلومات الوكالة
+                            </h6>
+                            <p class="mb-1"><strong>الموظف:</strong> @Model.EmployeeName</p>
+                            <p class="mb-1">
+                                <strong>النوع:</strong>
+                                @if (Model.IsGeneral)
+                                {
+                                    <span class="badge bg-info">وكالة عامة</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">وكالة على شاحنة</span>
+                                }
+                            </p>
+                            @if (!Model.IsGeneral && !string.IsNullOrEmpty(Model.TruckPlate))
+                            {
+                                <p class="mb-0"><strong>الشاحنة:</strong> @Model.TruckPlate</p>
+                            }
+                        </div>
+
+                        <!-- Dates Row -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="IssueDate" class="form-label">
+                                    <i class="fas fa-calendar-plus"></i> تاريخ الإصدار <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="IssueDate" type="date" class="form-control" id="issueDate" required />
+                                <span asp-validation-for="IssueDate" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="ExpiryDate" class="form-label">
+                                    <i class="fas fa-calendar-times"></i> تاريخ الانتهاء <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="ExpiryDate" type="date" class="form-control" id="expiryDate" required />
+                                <span asp-validation-for="ExpiryDate" class="text-danger small"></span>
+                                <small class="text-muted d-block mt-1" id="durationText"></small>
+                            </div>
+                        </div>
+
+                        <!-- Price and Payment -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="Price" class="form-label">
+                                    <i class="fas fa-money-bill-wave"></i> السعر (د.ك) <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Price" type="number" step="0.001" class="form-control form-control-lg" placeholder="0.000" required />
+                                <span asp-validation-for="Price" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="fas fa-credit-card"></i> حالة الدفع
+                                </label>
+                                <div class="form-check form-switch" style="padding-top: 10px;">
+                                    <input asp-for="IsPaid" class="form-check-input" type="checkbox" id="isPaidSwitch" style="width: 3rem; height: 1.5rem;">
+                                    <label class="form-check-label" for="isPaidSwitch" style="padding-top: 5px; margin-right: 10px;">
+                                        <strong id="paidLabel">@(Model.IsPaid ? "مدفوع" : "غير مدفوع")</strong>
+                                    </label>
+                                </div>
+                                @if (!Model.IsPaid)
+                                {
+                                    <small class="text-warning d-block mt-1">
+                                        <i class="fas fa-exclamation-triangle"></i> تغيير الحالة لـ "مدفوع" سيُنشئ حركة مالية تلقائياً
+                                    </small>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Sond Number and Notes -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="SondNumber" class="form-label">
+                                    <i class="fas fa-receipt"></i> رقم السند
+                                </label>
+                                <input asp-for="SondNumber" type="text" class="form-control" placeholder="رقم السند (اختياري)" maxlength="50" />
+                                <span asp-validation-for="SondNumber" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Notes" class="form-label">
+                                    <i class="fas fa-sticky-note"></i> ملاحظات
+                                </label>
+                                <input asp-for="Notes" type="text" class="form-control" placeholder="ملاحظات إضافية" maxlength="500" />
+                                <span asp-validation-for="Notes" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle"></i> ملخص التغييرات
+                            </h6>
+                            <div id="summaryContent">
+                                <p class="mb-1"><strong>المدة:</strong> <span id="summaryDuration">-</span></p>
+                                <p class="mb-1"><strong>السعر:</strong> <span id="summaryPrice">@Model.Price.ToString("N3")</span> د.ك</p>
+                                <p class="mb-0"><strong>الدفع:</strong> <span id="summaryPayment">@(Model.IsPaid ? "مدفوع" : "غير مدفوع")</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <hr>
+                        <div class="d-flex justify-content-between gap-2">
+                            <a href="/Wakalat/Details/@Model.WakalaId" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> إلغاء
+                            </a>
+                            <button type="reset" class="btn btn-outline-warning btn-lg">
+                                <i class="fas fa-redo"></i> إعادة تعيين
+                            </button>
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-save"></i> حفظ التعديلات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Warning Card -->
+            <div class="card mt-3 shadow border-danger">
+                <div class="card-body">
+                    <h6 class="card-title text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> تحذيرات:
+                    </h6>
+                    <ul class="mb-0">
+                        <li>لا يمكن تغيير الموظف أو نوع الوكالة أو الشاحنة بعد الإنشاء</li>
+                        <li>تغيير حالة الدفع من "غير مدفوع" لـ "مدفوع" سيُنشئ حركة مالية جديدة</li>
+                        <li>تأكد من صحة التواريخ المدخلة</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        $(document).ready(function() {
+            // Calculate duration
+            function updateDuration() {
+                const issueDate = new Date($('#issueDate').val());
+                const expiryDate = new Date($('#expiryDate').val());
+
+                if (issueDate && expiryDate) {
+                    const diffTime = Math.abs(expiryDate - issueDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const diffMonths = Math.round(diffDays / 30);
+
+                    $('#durationText').html(`<i class="fas fa-clock"></i> المدة: ${diffMonths} شهر (${diffDays} يوم)`);
+                    $('#summaryDuration').text(`${diffMonths} شهر (${diffDays} يوم)`);
+                }
+            }
+
+            $('#issueDate, #expiryDate').on('change', updateDuration);
+
+            // Update payment label
+            $('#isPaidSwitch').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#paidLabel').text('مدفوع');
+                    $('#summaryPayment').text('مدفوع');
+                } else {
+                    $('#paidLabel').text('غير مدفوع');
+                    $('#summaryPayment').text('غير مدفوع');
+                }
+            });
+
+            // Update price in summary
+            $('input[name="Price"]').on('input', function() {
+                const price = parseFloat($(this).val()) || 0;
+                $('#summaryPrice').text(price.toFixed(3));
+            });
+
+            // Form validation
+            $('#editWakalaForm').on('submit', function(e) {
+                const issueDate = new Date($('#issueDate').val());
+                const expiryDate = new Date($('#expiryDate').val());
+
+                if (expiryDate <= issueDate) {
+                    e.preventDefault();
+                    alert('تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار');
+                    return false;
+                }
+
+                if (!confirm('هل أنت متأكد من حفظ التعديلات؟')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Initialize
+            updateDuration();
+        });
+    </script>
 }

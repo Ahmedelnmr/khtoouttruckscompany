@@ -64,7 +64,7 @@
                                 </div>
 
                                 <div class="alert alert-info mb-0" id="typeDescription">
-                                    <i class="fas fa-truck"></i> 
+                                    <i class="fas fa-truck"></i>
                                     <strong>وكالة على شاحنة:</strong> خاصة بشاحنة واحدة فقط
                                 </div>
                             </div>
@@ -211,7 +211,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    
+
     <script>
         $(document).ready(function() {
             // Toggle between general and truck-specific
@@ -225,6 +225,12 @@
                     $('#summaryType').removeClass('bg-secondary').addClass('bg-info').text('وكالة عامة');
                     $('#summaryTruck').text('جميع الشاحنات');
                     $('#priceHint').html('<i class="fas fa-coins"></i> الوكالة العامة عادةً أغلى سعراً');
+
+                    // Suggest general price
+                    if ($('#priceInput').val() === '' || $('#priceInput').val() === '0') {
+                        $('#priceInput').val('50.000');
+                        $('#summaryPrice').text('50.000 د.ك');
+                    }
                 } else {
                     // Truck-specific Wakala
                     $('#typeLabel').text('وكالة على شاحنة محددة');
@@ -234,6 +240,12 @@
                     $('#summaryType').removeClass('bg-info').addClass('bg-secondary').text('على شاحنة');
                     updateSummary();
                     $('#priceHint').html('<i class="fas fa-info-circle"></i> السعر يختلف حسب النوع');
+
+                    // Suggest truck-specific price
+                    if ($('#priceInput').val() === '' || $('#priceInput').val() === '0' || $('#priceInput').val() === '50.000') {
+                        $('#priceInput').val('25.000');
+                        $('#summaryPrice').text('25.000 د.ك');
+                    }
                 }
             });
 
@@ -252,12 +264,12 @@
             function updateDuration() {
                 const issueDate = new Date($('#issueDate').val());
                 const expiryDate = new Date($('#expiryDate').val());
-                
+
                 if (issueDate && expiryDate) {
                     const diffTime = Math.abs(expiryDate - issueDate);
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                     const diffMonths = Math.round(diffDays / 30);
-                    
+
                     $('#durationText').html(`<i class="fas fa-clock"></i> المدة: ${diffMonths} شهر (${diffDays} يوم)`);
                     $('#summaryDuration').text(`${diffMonths} شهر (${diffDays} يوم)`);
                 }
@@ -286,9 +298,9 @@
             function updateSummary() {
                 const employeeName = $('#employeeSelect option:selected').text();
                 const truckName = $('#truckSelect option:selected').text();
-                
+
                 $('#summaryEmployee').text(employeeName !== '-- اختر الموظف --' ? employeeName : 'غير محدد');
-                
+
                 if (!$('#isGeneralSwitch').is(':checked')) {
                     $('#summaryTruck').text(truckName !== '-- اختر الشاحنة --' ? truckName : 'غير محددة');
                 }
@@ -331,6 +343,15 @@
                     return false;
                 }
 
+                const issueDate = new Date($('#issueDate').val());
+                const expiryDate = new Date($('#expiryDate').val());
+                if (expiryDate <= issueDate) {
+                    e.preventDefault();
+                    alert('تاريخ الانتهاء يجب أن يكون بعد تاريخ الإصدار');
+                    $('#expiryDate').focus();
+                    return false;
+                }
+
                 if (!confirm('هل أنت متأكد من حفظ الوكالة؟')) {
                     e.preventDefault();
                     return false;
@@ -345,9 +366,14 @@
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
-    
+
     .form-check-input:checked {
         background-color: #198754;
         border-color: #198754;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.1rem;
     }
 </style>

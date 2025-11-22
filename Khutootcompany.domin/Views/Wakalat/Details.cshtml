@@ -1,5 +1,352 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model Khutootcompany.Application.DTOs.WakalaDto
+
 @{
+    ViewData["Title"] = "تفاصيل الوكالة";
+    var statusClass = Model.IsExpired ? "danger" : Model.IsExpiringSoon ? "warning" : Model.IsWarning ? "info" : "success";
 }
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-file-contract"></i> تفاصيل الوكالة
+            <span class="badge bg-@statusClass">@Model.StatusText</span>
+        </h1>
+        <div class="btn-group">
+            <a href="/Wakalat" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للقائمة
+            </a>
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="/Wakalat/Edit/@Model.WakalaId" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> تعديل
+                </a>
+                @if (Model.IsExpired)
+                {
+                    <a href="/Wakalat/Create?renewFrom=@Model.WakalaId" class="btn btn-success">
+                        <i class="fas fa-redo"></i> تجديد
+                    </a>
+                }
+                <button onclick="confirmDelete(@Model.WakalaId)" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> حذف
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Info -->
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> المعلومات الأساسية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">رقم الوكالة</label>
+                            <h5>#@Model.WakalaId</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">نوع الوكالة</label>
+                            <h5>
+                                @if (Model.IsGeneral)
+                                {
+                                    <span class="badge bg-info fs-6">
+                                        <i class="fas fa-globe"></i> وكالة عامة
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="fas fa-truck"></i> وكالة على شاحنة
+                                    </span>
+                                }
+                            </h5>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">
+                                <i class="fas fa-user"></i> الموظف
+                            </label>
+                            <h5>
+                                <a href="/Employees/Details/@Model.EmployeeId" class="text-decoration-none">
+                                    @Model.EmployeeName
+                                </a>
+                            </h5>
+                        </div>
+                        @if (!Model.IsGeneral && Model.TruckId.HasValue)
+                        {
+                            <div class="col-md-6">
+                                <label class="text-muted small">
+                                    <i class="fas fa-truck"></i> الشاحنة
+                                </label>
+                                <h5>
+                                    <a href="/Trucks/Details/@Model.TruckId" class="text-decoration-none">
+                                        @Model.TruckPlate
+                                    </a>
+                                </h5>
+                            </div>
+                        }
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="text-muted small">
+                                <i class="fas fa-calendar-plus"></i> تاريخ الإصدار
+                            </label>
+                            <h5>@Model.IssueDate.ToString("dd/MM/yyyy")</h5>
+                            <small class="text-muted">@Model.IssueDate.ToString("dddd")</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">
+                                <i class="fas fa-calendar-times"></i> تاريخ الانتهاء
+                            </label>
+                            <h5 class="text-@statusClass">
+                                @Model.ExpiryDate.ToString("dd/MM/yyyy")
+                            </h5>
+                            <small class="text-muted">@Model.ExpiryDate.ToString("dddd")</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">
+                                <i class="fas fa-clock"></i> المدة
+                            </label>
+                            <h5>@Model.DurationInMonths شهر</h5>
+                            <small class="text-muted">(@Model.DurationInDays يوم)</small>
+                        </div>
+                    </div>
+
+                    <!-- Status Alert -->
+                    @if (Model.IsExpired)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>تحذير:</strong> هذه الوكالة منتهية منذ @Math.Abs(Model.DaysUntilExpiry) يوم! يجب تجديدها فوراً.
+                        </div>
+                    }
+                    else if (Model.IsExpiringSoon)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-clock"></i>
+                            <strong>تنبيه:</strong> هذه الوكالة ستنتهي خلال @Model.DaysRemaining يوم فقط.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>صالحة:</strong> باقي @Model.DaysRemaining يوم على الانتهاء.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Financial Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave"></i> المعلومات المالية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="text-muted small">السعر</label>
+                            <h3 class="text-success">@Model.Price.ToString("N3") د.ك</h3>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">حالة الدفع</label>
+                            <h4>
+                                @if (Model.IsPaid)
+                                {
+                                    <span class="badge bg-success fs-5">
+                                        <i class="fas fa-check"></i> مدفوع
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger fs-5">
+                                        <i class="fas fa-times"></i> غير مدفوع
+                                    </span>
+                                }
+                            </h4>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.SondNumber))
+                    {
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="text-muted small">
+                                    <i class="fas fa-receipt"></i> رقم السند
+                                </label>
+                                <h5 class="text-info">@Model.SondNumber</h5>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Notes -->
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sticky-note"></i> ملاحظات
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@Model.Notes</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Timeline -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt"></i> الجدول الزمني
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <i class="fas fa-plus-circle text-success"></i>
+                            <div>
+                                <strong>تاريخ الإصدار</strong>
+                                <p class="mb-0 text-muted">@Model.IssueDate.ToString("dd/MM/yyyy")</p>
+                            </div>
+                        </div>
+                        @if (!Model.IsExpired)
+                        {
+                            <div class="timeline-item">
+                                <i class="fas fa-clock text-primary"></i>
+                                <div>
+                                    <strong>اليوم</strong>
+                                    <p class="mb-0 text-muted">@DateTime.Today.ToString("dd/MM/yyyy")</p>
+                                    <small class="text-success">باقي @Model.DaysRemaining يوم</small>
+                                </div>
+                            </div>
+                        }
+                        <div class="timeline-item">
+                            <i class="fas fa-flag-checkered text-@statusClass"></i>
+                            <div>
+                                <strong>تاريخ الانتهاء</strong>
+                                <p class="mb-0 text-muted">@Model.ExpiryDate.ToString("dd/MM/yyyy")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Info -->
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> معلومات التدقيق
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">أنشئت بواسطة</label>
+                        <p class="mb-0"><strong>@Model.CreatedBy</strong></p>
+                        <small class="text-muted">@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</small>
+                    </div>
+                    @if (Model.UpdatedBy != null)
+                    {
+                        <hr>
+                        <div>
+                            <label class="text-muted small">آخر تعديل بواسطة</label>
+                            <p class="mb-0"><strong>@Model.UpdatedBy</strong></p>
+                            <small class="text-muted">@Model.UpdatedDate?.ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف هذه الوكالة؟</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    سيتم حذف السجل نهائياً ولا يمكن استرجاعه!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> تأكيد الحذف
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmDelete(wakalaId) {
+            $('#deleteForm').attr('action', '/Wakalat/Delete/' + wakalaId);
+            $('#deleteModal').modal('show');
+        }
+    </script>
+}
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 40px;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 20px;
+        display: flex;
+        align-items: start;
+        gap: 15px;
+    }
+
+        .timeline-item i {
+            font-size: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .timeline-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 25px;
+            height: calc(100% - 10px);
+            width: 2px;
+            background: #dee2e6;
+        }
+</style>

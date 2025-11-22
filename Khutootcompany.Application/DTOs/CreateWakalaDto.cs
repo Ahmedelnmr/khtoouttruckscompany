@@ -1,18 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Khutootcompany.Application.DTOs
 {
     public class CreateWakalaDto
     {
+        // ⭐ إضافة ID للتعديل
+        public int WakalaId { get; set; }
+
         [Required(ErrorMessage = "الموظف مطلوب")]
         public int EmployeeId { get; set; }
 
-        // Null = وكالة عامة
+        // ⭐ يكون null في حالة الوكالة العامة
         public int? TruckId { get; set; }
 
         [Required(ErrorMessage = "تاريخ الإصدار مطلوب")]
@@ -26,7 +25,7 @@ namespace Khutootcompany.Application.DTOs
         public bool IsPaid { get; set; }
 
         [Required(ErrorMessage = "السعر مطلوب")]
-        [Range(0.001, 1000, ErrorMessage = "السعر يجب أن يكون أكبر من صفر")]
+        [Range(0.001, 1000, ErrorMessage = "السعر يجب أن يكون بين 0.001 و 1000")]
         public decimal Price { get; set; }
 
         [StringLength(50)]
@@ -34,5 +33,19 @@ namespace Khutootcompany.Application.DTOs
 
         [StringLength(500)]
         public string? Notes { get; set; }
+
+        // ⭐ Validation: إذا كانت الوكالة على شاحنة، يجب تحديد الشاحنة
+        public bool IsValid()
+        {
+            // إذا الوكالة مش عامة، لازم يكون في TruckId
+            if (!IsGeneral && !TruckId.HasValue)
+                return false;
+
+            // تاريخ الانتهاء لازم يكون بعد تاريخ الإصدار
+            if (ExpiryDate <= IssueDate)
+                return false;
+
+            return true;
+        }
     }
 }

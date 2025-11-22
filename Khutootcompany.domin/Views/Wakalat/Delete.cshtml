@@ -1,5 +1,238 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model Khutootcompany.Application.DTOs.WakalaDto
+
 @{
+    ViewData["Title"] = "حذف الوكالة";
 }
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-danger">
+            <i class="fas fa-trash-alt"></i> حذف الوكالة
+        </h1>
+        <a href="/Wakalat/Details/@Model.WakalaId" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> رجوع
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Warning Alert -->
+            <div class="alert alert-danger shadow">
+                <h4 class="alert-heading">
+                    <i class="fas fa-exclamation-triangle"></i> تحذير: عملية خطيرة!
+                </h4>
+                <p class="mb-0">
+                    أنت على وشك حذف هذه الوكالة نهائياً. لن تتمكن من استرجاعها بعد الحذف.
+                </p>
+            </div>
+
+            <!-- Wakala Details Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-contract"></i> بيانات الوكالة المراد حذفها
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">رقم الوكالة</label>
+                            <h5>#@Model.WakalaId</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">نوع الوكالة</label>
+                            <h5>
+                                @if (Model.IsGeneral)
+                                {
+                                    <span class="badge bg-info fs-6">
+                                        <i class="fas fa-globe"></i> وكالة عامة
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="fas fa-truck"></i> وكالة على شاحنة
+                                    </span>
+                                }
+                            </h5>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">
+                                <i class="fas fa-user"></i> الموظف
+                            </label>
+                            <h5>@Model.EmployeeName</h5>
+                        </div>
+                        @if (!Model.IsGeneral && !string.IsNullOrEmpty(Model.TruckPlate))
+                        {
+                            <div class="col-md-6">
+                                <label class="text-muted small">
+                                    <i class="fas fa-truck"></i> الشاحنة
+                                </label>
+                                <h5>@Model.TruckPlate</h5>
+                            </div>
+                        }
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="text-muted small">تاريخ الإصدار</label>
+                            <p class="mb-0">@Model.IssueDate.ToString("dd/MM/yyyy")</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">تاريخ الانتهاء</label>
+                            <p class="mb-0">@Model.ExpiryDate.ToString("dd/MM/yyyy")</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">الحالة</label>
+                            <p class="mb-0">
+                                <span class="badge bg-@Model.StatusColor">@Model.StatusText</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="text-muted small">السعر</label>
+                            <h5 class="text-success">@Model.Price.ToString("N3") د.ك</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">حالة الدفع</label>
+                            <h5>
+                                @if (Model.IsPaid)
+                                {
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check"></i> مدفوع
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-times"></i> غير مدفوع
+                                    </span>
+                                }
+                            </h5>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.SondNumber))
+                    {
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label class="text-muted small">رقم السند</label>
+                                <p class="mb-0"><span class="badge bg-info">@Model.SondNumber</span></p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label class="text-muted small">ملاحظات</label>
+                                <p class="mb-0">@Model.Notes</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Consequences Card -->
+            <div class="card shadow mb-4 border-warning">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> نتائج الحذف
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>سيتم حذف سجل الوكالة نهائياً من النظام</li>
+                        <li>لن يكون من الممكن استرجاع البيانات بعد الحذف</li>
+                        <li>سيتم الاحتفاظ بالبيانات في سجل التدقيق (Audit Log) فقط</li>
+                        <li class="text-danger"><strong>تحذير:</strong> لن يتم حذف أي حركات مالية مرتبطة بالوكالة</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Confirmation Form -->
+            <div class="card shadow border-danger">
+                <div class="card-body">
+                    <form method="post" asp-action="Delete" id="deleteForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="WakalaId" />
+
+                        <div class="alert alert-danger mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirmCheck" required>
+                                <label class="form-check-label" for="confirmCheck">
+                                    <strong>أؤكد أنني أفهم أن هذا الإجراء لا يمكن التراجع عنه</strong>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between gap-2">
+                            <a href="/Wakalat/Details/@Model.WakalaId" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> إلغاء - عدم الحذف
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg" id="deleteBtn" disabled>
+                                <i class="fas fa-trash-alt"></i> نعم، احذف الوكالة نهائياً
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Enable delete button only when checkbox is checked
+            $('#confirmCheck').on('change', function() {
+                $('#deleteBtn').prop('disabled', !$(this).is(':checked'));
+            });
+
+            // Final confirmation before submit
+            $('#deleteForm').on('submit', function(e) {
+                if (!confirm('⚠️ تحذير أخير!\n\nهل أنت متأكد تماماً من حذف هذه الوكالة؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    .btn-danger:hover {
+        animation: shake 0.5s;
+    }
+
+    @@keyframes shake {
+        0%, 100%
+
+    {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+
+    }
+</style>
