@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace Khutootcompany.Application.Services
 {
-
     public class ReportService : IReportService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -19,12 +18,8 @@ namespace Khutootcompany.Application.Services
         public ReportService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-
-            // Set QuestPDF license
             QuestPDF.Settings.License = LicenseType.Community;
         }
-        decimal totalIncome = 0;
-        decimal totalExpense = 0;
 
         public async Task<byte[]> GeneratePAMReportAsync()
         {
@@ -38,7 +33,6 @@ namespace Khutootcompany.Application.Services
                     page.Margin(20);
                     page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
 
-                    // Header
                     page.Header().Row(row =>
                     {
                         row.RelativeItem().Column(column =>
@@ -52,30 +46,26 @@ namespace Khutootcompany.Application.Services
                         });
                     });
 
-                    // Content
                     page.Content().PaddingVertical(10).Column(column =>
                     {
-                        // Table
                         column.Item().Table(table =>
                         {
-                            // Define columns
                             table.ColumnsDefinition(columns =>
                             {
-                                columns.ConstantColumn(30);  // ت
-                                columns.RelativeColumn(1);    // التسجيل
-                                columns.RelativeColumn(1);    // اللوحة
-                                columns.RelativeColumn(1.5f); // الصنع
-                                columns.RelativeColumn(0.8f); // السنة
-                                columns.RelativeColumn(2);    // السائق
-                                columns.RelativeColumn(1.5f); // المدني
-                                columns.RelativeColumn(1);    // الجنسية
-                                columns.RelativeColumn(1.5f); // الترخيص
-                                columns.RelativeColumn(1);    // التأمين
-                                columns.RelativeColumn(1);    // PAM
-                                columns.RelativeColumn(1);    // اللون
+                                columns.ConstantColumn(30);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1.5f);
+                                columns.RelativeColumn(0.8f);
+                                columns.RelativeColumn(2);
+                                columns.RelativeColumn(1.5f);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1.5f);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
                             });
 
-                            // Header Row
                             table.Header(header =>
                             {
                                 header.Cell().Background(Colors.Grey.Darken3).Padding(3)
@@ -104,14 +94,12 @@ namespace Khutootcompany.Application.Services
                                     .Text("اللون").FontColor(Colors.White).Bold().AlignRight();
                             });
 
-                            // Data Rows
                             int index = 1;
                             foreach (var truck in trucks.OrderBy(t => t.TruckId))
                             {
                                 var currentDriver = truck.Assignments?.FirstOrDefault(a => a.IsCurrent);
                                 var bgColor = index % 2 == 0 ? Colors.Grey.Lighten4 : Colors.White;
 
-                                // Color coding for expired insurance
                                 if (truck.IsInsuranceExpired() || truck.IsInsuranceExpiringSoon())
                                 {
                                     bgColor = Colors.Red.Lighten3;
@@ -119,37 +107,26 @@ namespace Khutootcompany.Application.Services
 
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(index.ToString()).AlignCenter();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(truck.PAMRegistrationDate?.ToString("dd/MM/yy") ?? "").AlignRight();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(truck.PlateNumber).Bold().AlignRight();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(truck.Model).AlignRight();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(truck.Year?.ToString() ?? "").AlignCenter();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(currentDriver?.Employee?.FullName ?? "").AlignRight();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(currentDriver?.Employee?.CivilId ?? "").AlignCenter();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(currentDriver?.Employee?.Nationality?.ToString().Replace("_", " ") ?? "").AlignRight();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(truck.LicenseType.ToString().Replace("_", " ")).AlignRight();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(truck.InsuranceExpiryDate?.ToString("dd/MM/yy") ?? "").AlignCenter();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(truck.PAMStatus?.ToString().Replace("_", " ") ?? "").AlignRight();
-
                                 table.Cell().Background(bgColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
                                     .Padding(3).Text(truck.Color ?? "").AlignRight();
 
@@ -157,7 +134,6 @@ namespace Khutootcompany.Application.Services
                             }
                         });
 
-                        // Summary
                         column.Item().PaddingTop(10).Row(row =>
                         {
                             row.RelativeItem().Text($"إجمالي الشاحنات: {trucks.Count()}")
@@ -165,7 +141,6 @@ namespace Khutootcompany.Application.Services
                         });
                     });
 
-                    // Footer
                     page.Footer().AlignCenter().Text(text =>
                     {
                         text.Span("صفحة ");
@@ -348,8 +323,83 @@ namespace Khutootcompany.Application.Services
             var expiringSoon = await _unitOfWork.Wakalat.GetExpiringSoonWakalatAsync(30);
             var allExpired = wakalat.Concat(expiringSoon).Distinct();
 
-            // Similar implementation to residencies report
-            return await Task.FromResult(new byte[0]); // Placeholder
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(30);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Column(column =>
+                    {
+                        column.Item().Text("كشف الوكالات المنتهية")
+                            .FontSize(18).Bold().AlignCenter();
+                        column.Item().Text($"التاريخ: {DateTime.Now:dd/MM/yyyy}")
+                            .FontSize(11).AlignCenter();
+                        column.Item().PaddingTop(5).LineHorizontal(1);
+                    });
+
+                    page.Content().PaddingVertical(10).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(40);
+                            columns.RelativeColumn(1);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(1);
+                            columns.RelativeColumn(1);
+                            columns.RelativeColumn(1);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Background(Colors.Purple.Darken2).Padding(5)
+                                .Text("ت").FontColor(Colors.White).Bold();
+                            header.Cell().Background(Colors.Purple.Darken2).Padding(5)
+                                .Text("اللوحة").FontColor(Colors.White).Bold().AlignRight();
+                            header.Cell().Background(Colors.Purple.Darken2).Padding(5)
+                                .Text("السائق").FontColor(Colors.White).Bold().AlignRight();
+                            header.Cell().Background(Colors.Purple.Darken2).Padding(5)
+                                .Text("السعر").FontColor(Colors.White).Bold().AlignCenter();
+                            header.Cell().Background(Colors.Purple.Darken2).Padding(5)
+                                .Text("تاريخ الانتهاء").FontColor(Colors.White).Bold().AlignCenter();
+                            header.Cell().Background(Colors.Purple.Darken2).Padding(5)
+                                .Text("الحالة").FontColor(Colors.White).Bold().AlignCenter();
+                        });
+
+                        int index = 1;
+                        foreach (var wakala in allExpired.OrderBy(w => w.ExpiryDate))
+                        {
+                            var isExpired = wakala.IsExpired();
+                            var bgColor = isExpired ? Colors.Red.Lighten3 : Colors.Orange.Lighten3;
+                            var status = isExpired ? "منتهي" : "ينتهي قريباً";
+
+                            table.Cell().Background(bgColor).Padding(5).Text(index.ToString());
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text(wakala.Truck?.PlateNumber ?? "").Bold().AlignRight();
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text(wakala.Employee?.FullName ?? "").AlignRight();
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text($"{wakala.Price:N3} د.ك").AlignCenter();
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text(wakala.ExpiryDate.ToString("dd/MM/yyyy") ?? "").AlignCenter();
+                            table.Cell().Background(bgColor).Padding(5).Text(status).Bold().AlignCenter();
+
+                            index++;
+                        }
+                    });
+
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.CurrentPageNumber();
+                        x.Span(" / ");
+                        x.TotalPages();
+                    });
+                });
+            });
+
+            return document.GeneratePdf();
         }
 
         public async Task<byte[]> GenerateExpiredInsuranceReportAsync()
@@ -358,13 +408,92 @@ namespace Khutootcompany.Application.Services
             var expiringSoon = await _unitOfWork.Trucks.GetTrucksWithExpiringSoonInsuranceAsync(30);
             var allExpired = trucks.Concat(expiringSoon).Distinct();
 
-            // Similar implementation
-            return await Task.FromResult(new byte[0]); // Placeholder
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(30);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Column(column =>
+                    {
+                        column.Item().Text("كشف التأمينات المنتهية")
+                            .FontSize(18).Bold().AlignCenter();
+                        column.Item().Text($"التاريخ: {DateTime.Now:dd/MM/yyyy}")
+                            .FontSize(11).AlignCenter();
+                        column.Item().PaddingTop(5).LineHorizontal(1);
+                    });
+
+                    page.Content().PaddingVertical(10).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(40);
+                            columns.RelativeColumn(1);
+                            columns.RelativeColumn(1.5f);
+                            columns.RelativeColumn(1.5f);
+                            columns.RelativeColumn(1);
+                            columns.RelativeColumn(1);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Background(Colors.Orange.Darken2).Padding(5)
+                                .Text("ت").FontColor(Colors.White).Bold();
+                            header.Cell().Background(Colors.Orange.Darken2).Padding(5)
+                                .Text("اللوحة").FontColor(Colors.White).Bold().AlignRight();
+                            header.Cell().Background(Colors.Orange.Darken2).Padding(5)
+                                .Text("الصنع").FontColor(Colors.White).Bold().AlignRight();
+                            header.Cell().Background(Colors.Orange.Darken2).Padding(5)
+                                .Text("السائق الحالي").FontColor(Colors.White).Bold().AlignRight();
+                            header.Cell().Background(Colors.Orange.Darken2).Padding(5)
+                                .Text("تاريخ الانتهاء").FontColor(Colors.White).Bold().AlignCenter();
+                            header.Cell().Background(Colors.Orange.Darken2).Padding(5)
+                                .Text("الحالة").FontColor(Colors.White).Bold().AlignCenter();
+                        });
+
+                        int index = 1;
+                        foreach (var truck in allExpired.OrderBy(t => t.InsuranceExpiryDate))
+                        {
+                            var currentDriver = truck.Assignments?.FirstOrDefault(a => a.IsCurrent);
+                            var isExpired = truck.IsInsuranceExpired();
+                            var bgColor = isExpired ? Colors.Red.Lighten3 : Colors.Orange.Lighten3;
+                            var status = isExpired ? "منتهي" : "ينتهي قريباً";
+
+                            table.Cell().Background(bgColor).Padding(5).Text(index.ToString());
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text(truck.PlateNumber).Bold().AlignRight();
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text(truck.Model).AlignRight();
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text(currentDriver?.Employee?.FullName ?? "غير محدد").AlignRight();
+                            table.Cell().Background(bgColor).Padding(5)
+                                .Text(truck.InsuranceExpiryDate?.ToString("dd/MM/yyyy") ?? "").AlignCenter();
+                            table.Cell().Background(bgColor).Padding(5).Text(status).Bold().AlignCenter();
+
+                            index++;
+                        }
+                    });
+
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.CurrentPageNumber();
+                        x.Span(" / ");
+                        x.TotalPages();
+                    });
+                });
+            });
+
+            return document.GeneratePdf();
         }
 
         public async Task<byte[]> GenerateMonthlyCashReportAsync(int year, int month)
         {
             var transactions = await _unitOfWork.CashTransactions.GetMonthlyTransactionsAsync(year, month);
+
+            decimal totalIncome = 0;
+            decimal totalExpense = 0;
 
             var document = Document.Create(container =>
             {
@@ -411,8 +540,6 @@ namespace Khutootcompany.Application.Services
                                     .Text("الوصف").FontColor(Colors.White).Bold().AlignRight();
                             });
 
-                    
-
                             foreach (var trans in transactions.OrderBy(t => t.TransactionDate))
                             {
                                 var bgColor = trans.Amount > 0 ? Colors.Green.Lighten4 : Colors.Red.Lighten4;
@@ -435,7 +562,6 @@ namespace Khutootcompany.Application.Services
                             }
                         });
 
-                        // Summary
                         col.Item().PaddingTop(15).Column(summary =>
                         {
                             summary.Item().Row(row =>

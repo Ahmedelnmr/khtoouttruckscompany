@@ -16,5 +16,14 @@ namespace Khutootcompany.presention.Models
         [Required(ErrorMessage = "الصلاحية مطلوبة")]
         [Display(Name = "الصلاحية")]
         public string Role { get; set; } = "User";
+
+
+        // New Fields
+        [DataType(DataType.Password)]
+        public string? NewPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "كلمة المرور غير متطابقة")]
+        public string? ConfirmPassword { get; set; }
     }
 }

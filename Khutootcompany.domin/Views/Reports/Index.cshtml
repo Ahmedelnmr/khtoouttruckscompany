@@ -1,12 +1,20 @@
-﻿
-@{
+﻿@{
     ViewData["Title"] = "التقارير";
 }
 
 <div class="container-fluid">
     <h1><i class="fas fa-file-pdf"></i> التقارير</h1>
 
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="row mt-4">
+        <!-- PAM Report -->
         <div class="col-md-4 mb-3">
             <div class="card shadow h-100">
                 <div class="card-body text-center">
@@ -20,6 +28,7 @@
             </div>
         </div>
 
+        <!-- Expired Residencies Report -->
         <div class="col-md-4 mb-3">
             <div class="card shadow h-100">
                 <div class="card-body text-center">
@@ -33,6 +42,7 @@
             </div>
         </div>
 
+        <!-- Overdue Installments Report -->
         <div class="col-md-4 mb-3">
             <div class="card shadow h-100">
                 <div class="card-body text-center">
@@ -46,6 +56,35 @@
             </div>
         </div>
 
+        <!-- Expired Wakalat Report -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-contract fa-3x text-info mb-3"></i>
+                    <h5>كشف الوكالات المنتهية</h5>
+                    <p class="text-muted">جميع الوكالات المنتهية أو تنتهي قريباً</p>
+                    <a href="/Reports/GenerateExpiredWakalatReport" class="btn btn-info" target="_blank">
+                        <i class="fas fa-download"></i> تحميل PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expired Insurance Report -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-shield-alt fa-3x text-secondary mb-3"></i>
+                    <h5>كشف التأمينات المنتهية</h5>
+                    <p class="text-muted">جميع الشاحنات بتأمين منتهي</p>
+                    <a href="/Reports/GenerateExpiredInsuranceReport" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-download"></i> تحميل PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Cash Report -->
         <div class="col-md-4 mb-3">
             <div class="card shadow h-100">
                 <div class="card-body text-center">
@@ -69,4 +108,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Statistics Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> ملاحظات</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success"></i> جميع التقارير يتم إنشاؤها بصيغة PDF</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success"></i> يتم فتح التقارير في نافذة جديدة</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success"></i> التقارير تحتوي على البيانات الحالية فقط</li>
+                        <li class="mb-0"><i class="fas fa-check-circle text-success"></i> يمكنك طباعة أو حفظ التقارير مباشرة</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+    </script>
+}

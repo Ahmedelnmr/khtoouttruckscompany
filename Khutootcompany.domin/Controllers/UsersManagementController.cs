@@ -106,12 +106,30 @@ namespace Khutootcompany.presention.Controllers
                 if (user == null)
                     return NotFound();
 
+                // Update FullName
                 user.FullName = model.FullName;
 
                 var result = await _userManager.UpdateAsync(user);
 
                 if (result.Succeeded)
                 {
+                    // ----------------------------
+                    // 🔐 تغيير كلمة المرور (اختياري)
+                    // ----------------------------
+                    if (!string.IsNullOrWhiteSpace(model.NewPassword))
+                    {
+                        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                        var passResult = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+
+                        if (!passResult.Succeeded)
+                        {
+                            foreach (var error in passResult.Errors)
+                                ModelState.AddModelError("", error.Description);
+
+                            return View(model);
+                        }
+                    }
+
                     // Update role
                     var currentRoles = await _userManager.GetRolesAsync(user);
                     await _userManager.RemoveFromRolesAsync(user, currentRoles);
@@ -129,6 +147,7 @@ namespace Khutootcompany.presention.Controllers
 
             return View(model);
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
